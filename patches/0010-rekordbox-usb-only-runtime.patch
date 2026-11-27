@@ -1323,7 +1323,7 @@ new file mode 100644
 index 0000000..1c232c3
 --- /dev/null
 +++ b/src/library/rekordbox/rekordboxdatabase.cpp
-@@ -0,0 +1,458 @@
+@@ -0,0 +1,468 @@
 +#include "library/rekordbox/rekordboxdatabase.h"
 +
 +#include <QFile>
@@ -1440,7 +1440,11 @@ index 0000000..1c232c3
 +                if (groups > (pageSize - kPageHeaderBytes) / kRowGroupBytes) {
 +                    throw std::runtime_error("DeviceSQL row index overlaps page header");
 +                }
-+                const quint32 heapEnd = pageSize - groups * kRowGroupBytes;
++                // Rekordbox writes a partial last row group compactly: 4 flag
++                // bytes plus one 2-byte offset per row, not a full 36-byte group.
++                const quint32 partialRows = rowCount % 16;
++                const quint32 heapEnd = pageSize - (rowCount / 16) * kRowGroupBytes -
++                        (partialRows ? 4 + 2 * partialRows : 0);
 +                QList<DatabaseRow> rows;
 +                for (quint32 group = 0; group < groups; ++group) {
 +                    const quint32 end = pageSize - group * kRowGroupBytes;
@@ -1608,12 +1612,18 @@ index 0000000..1c232c3
 +                    minimumTextOffset = 10;
 +                }
 +                break;
-+            case 3: // Albums
++            case 3: // Album names may have near or far offsets, like artists.
 +                if (row.size < 22) throw std::runtime_error("Truncated album row");
 +                id = u32(bytes, at + 12);
 +                albumArtists.insert(id, u32(bytes, at + 8));
-+                textOffset = static_cast<quint8>(bytes.at(at + 21));
-+                minimumTextOffset = 22;
++                if (u16(bytes, at) == 0x84) {
++                    if (row.size < 24) throw std::runtime_error("Truncated far album name");
++                    textOffset = u16(bytes, at + 22);
++                    minimumTextOffset = 24;
++                } else {
++                    textOffset = static_cast<quint8>(bytes.at(at + 21));
++                    minimumTextOffset = 22;
++                }
 +                break;
 +            case 6: // Device color names, not RGB samples.
 +                if (row.size < 9) throw std::runtime_error("Truncated color row");
@@ -7754,7 +7764,7 @@ new file mode 100644
 index 0000000..1d0f112
 --- /dev/null
 +++ b/src/test/rekordboxdatabase_test.cpp
-@@ -0,0 +1,380 @@
+@@ -0,0 +1,398 @@
 +#include <gtest/gtest.h>
 +
 +#include <QtEndian>
@@ -7799,7 +7809,25 @@ index 0000000..1d0f112
 +    ASSERT_EQ(result.rows.size(), 2);
 +    EXPECT_EQ(result.rows.at(0).offset, 2 * kPage + 40);
 +    EXPECT_EQ(result.rows.at(0).size, 64);
-+    EXPECT_EQ(result.rows.at(1).size, kPage - 36 - 104);
++    // Two rows: the compact row index takes 4 flag bytes and 2 offsets.
++    EXPECT_EQ(result.rows.at(1).size, kPage - 8 - 104);
++}
++
++TEST(RekordboxDatabaseTest, AcceptsRowsBesideCompactPartialRowGroup) {
++    // A nearly full rekordbox page keeps live rows in the space that a
++    // full-size 36-byte partial group would cover.
++    auto bytes = database();
++    const int end = kPage * 3;
++    put16(&bytes, kPage * 2 + 24, 20); // One full group plus four rows.
++    put16(&bytes, end - 4, 0); // First group: no live rows.
++    const int partial = end - 36;
++    put16(&bytes, partial - 4, 1); // Row 16 is live.
++    put16(&bytes, partial - 6, 400); // Page offset 440.
++    const auto result = readDatabase(bytes, DatabaseKind::Main);
++    ASSERT_TRUE(result.valid()) << result.error.toStdString();
++    ASSERT_EQ(result.rows.size(), 1);
++    EXPECT_EQ(result.rows.at(0).offset, 2 * kPage + 440);
++    EXPECT_EQ(result.rows.at(0).size, kPage - 36 - 12 - 440);
 +}
 +
 +TEST(RekordboxDatabaseTest, RejectsTruncatedAndOversizedHeaders) {
