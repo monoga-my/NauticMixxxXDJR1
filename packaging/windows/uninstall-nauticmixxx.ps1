@@ -95,6 +95,7 @@ function Test-Rx3StandardProfile {
         'effects\chains\RX3 FILTER.xml',
         'effects\chains\RX3 PITCH.xml',
         'effects\chains\RX3 CRUSH.xml',
+        'effects\chains\XDJ-R1 BEAT FX.xml',
         'effects\chains\XDJ-R1 TRANS.xml',
         'effects\chains\XDJ-R1 FLANGER.xml',
         'effects\chains\XDJ-R1 ECHO.xml'
@@ -177,6 +178,7 @@ function Remove-Rx3StandardProfile {
         'effects\chains\RX3 FILTER.xml',
         'effects\chains\RX3 PITCH.xml',
         'effects\chains\RX3 CRUSH.xml',
+        'effects\chains\XDJ-R1 BEAT FX.xml',
         'effects\chains\XDJ-R1 TRANS.xml',
         'effects\chains\XDJ-R1 FLANGER.xml',
         'effects\chains\XDJ-R1 ECHO.xml',

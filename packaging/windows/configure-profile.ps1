@@ -83,13 +83,13 @@ try {
         $node.InnerText = $wanted[$i]
         [void]$list.PrependChild($node)
     }
-    # Beat FX presets the XDJ-R1 mapping loads by position (1-3).
+    # Beat FX presets the XDJ-R1 mapping loads by position (1 = XDJ-R1 BEAT FX).
     $chainList = $xml.DocumentElement.SelectSingleNode('ChainPresetList')
     if ($null -eq $chainList) {
         $chainList = $xml.CreateElement('ChainPresetList')
         [void]$xml.DocumentElement.AppendChild($chainList)
     }
-    $beatFx = @('XDJ-R1 TRANS', 'XDJ-R1 FLANGER', 'XDJ-R1 ECHO')
+    $beatFx = @('XDJ-R1 BEAT FX', 'XDJ-R1 TRANS', 'XDJ-R1 FLANGER', 'XDJ-R1 ECHO')
     foreach ($child in @($chainList.ChildNodes)) {
         if ($child.Name -eq 'ChainPresetName' -and $beatFx -contains $child.InnerText) {
             [void]$chainList.RemoveChild($child)

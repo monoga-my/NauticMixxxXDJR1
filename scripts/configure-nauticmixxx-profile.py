@@ -48,6 +48,7 @@ EFFECT_CHAIN_FILES = (
     "RX3 FILTER.xml",
     "RX3 PITCH.xml",
     "RX3 CRUSH.xml",
+    "XDJ-R1 BEAT FX.xml",
     "XDJ-R1 TRANS.xml",
     "XDJ-R1 FLANGER.xml",
     "XDJ-R1 ECHO.xml",
@@ -62,8 +63,8 @@ QUICK_EFFECT_PRESETS = (
     "RX3 CRUSH",
 )
 LEGACY_QUICK_EFFECT_PRESETS = ("RX3 SPACE", "RX3 DUB ECHO")
-# Beat FX presets the XDJ-R1 mapping loads by position (1-3) on effect units 3-4.
-BEAT_FX_PRESETS = ("XDJ-R1 TRANS", "XDJ-R1 FLANGER", "XDJ-R1 ECHO")
+# Beat FX chain the XDJ-R1 mapping loads at position 1 on effect units 3-4.
+BEAT_FX_PRESETS = ("XDJ-R1 BEAT FX", "XDJ-R1 TRANS", "XDJ-R1 FLANGER", "XDJ-R1 ECHO")
 MANAGED_SECTIONS = (
     "Config",
     "Controls",

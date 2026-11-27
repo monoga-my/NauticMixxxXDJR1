@@ -1,0 +1,50 @@
+<!-- XDJ-R1 Beat FX pane for one deck (effect unit deck + 2): which effects
+     are on, which one is being edited, their levels, the edited effect's beat
+     and whether the lows are kept dry (MID+HI). Driven by the XDJ-R1 mapping. -->
+<Template>
+  <WidgetGroup>
+    <ObjectName>XdjFxPane</ObjectName><Layout>vertical</Layout><Size>0me,0me</Size>
+    <Children>
+      <WidgetGroup>
+        <ObjectName>XdjFxPaneTitleRow</ObjectName><Layout>horizontal</Layout><Size>0me,26f</Size>
+        <Children>
+          <Label><ObjectName>XdjFxPaneTitle</ObjectName><Text>DECK <Variable name="deck"/> FX</Text></Label>
+          <Label>
+            <ObjectName>XdjFxMidHi</ObjectName><Text>MID+HI</Text><Size>58f,18f</Size>
+            <Connection><ConfigKey>[EffectRack1_EffectUnit<Variable name="unit"/>],rx3_keep_lows</ConfigKey><BindProperty>visible</BindProperty></Connection>
+          </Label>
+        </Children>
+      </WidgetGroup>
+      <Template src="skin:xdj_fx_row.xml"><SetVariable name="index">1</SetVariable><SetVariable name="slot">1</SetVariable><SetVariable name="name">TRANS</SetVariable></Template>
+      <Template src="skin:xdj_fx_row.xml"><SetVariable name="index">2</SetVariable><SetVariable name="slot">2</SetVariable><SetVariable name="name">FLANGER</SetVariable></Template>
+      <Template src="skin:xdj_fx_row.xml"><SetVariable name="index">3</SetVariable><SetVariable name="slot">3</SetVariable><SetVariable name="name">ECHO</SetVariable></Template>
+      <WidgetGroup>
+        <ObjectName>XdjFxRow</ObjectName><Layout>horizontal</Layout><Size>0me,26f</Size>
+        <Connection><ConfigKey>[Skin],xdj_fx<Variable name="deck"/>_edit</ConfigKey><Transform><IsEqual>4</IsEqual></Transform><BindProperty>highlight</BindProperty></Connection>
+        <Children>
+          <Label>
+            <ObjectName>XdjFxName</ObjectName><Text>ROLL</Text><Size>78f,22f</Size>
+            <Connection><ConfigKey>[Skin],xdj_fx<Variable name="deck"/>_roll</ConfigKey><BindProperty>highlight</BindProperty></Connection>
+          </Label>
+          <WidgetGroup><Size>0me,0me</Size></WidgetGroup>
+        </Children>
+      </WidgetGroup>
+      <WidgetGroup>
+        <ObjectName>XdjFxBeatRow</ObjectName><Layout>horizontal</Layout><Size>0me,0me</Size>
+        <Children>
+          <Label><ObjectName>XdjFxBeatCaption</ObjectName><Text>BEAT</Text></Label>
+          <Label><ObjectName>XdjFxBeat</ObjectName><Text>1/16</Text><Size>0me,0me</Size><Connection><ConfigKey>[Skin],xdj_fx<Variable name="deck"/>_beat</ConfigKey><Transform><IsEqual>0</IsEqual></Transform><BindProperty>visible</BindProperty></Connection></Label>
+          <Label><ObjectName>XdjFxBeat</ObjectName><Text>1/8</Text><Size>0me,0me</Size><Connection><ConfigKey>[Skin],xdj_fx<Variable name="deck"/>_beat</ConfigKey><Transform><IsEqual>1</IsEqual></Transform><BindProperty>visible</BindProperty></Connection></Label>
+          <Label><ObjectName>XdjFxBeat</ObjectName><Text>1/4</Text><Size>0me,0me</Size><Connection><ConfigKey>[Skin],xdj_fx<Variable name="deck"/>_beat</ConfigKey><Transform><IsEqual>2</IsEqual></Transform><BindProperty>visible</BindProperty></Connection></Label>
+          <Label><ObjectName>XdjFxBeat</ObjectName><Text>1/2</Text><Size>0me,0me</Size><Connection><ConfigKey>[Skin],xdj_fx<Variable name="deck"/>_beat</ConfigKey><Transform><IsEqual>3</IsEqual></Transform><BindProperty>visible</BindProperty></Connection></Label>
+          <Label><ObjectName>XdjFxBeat</ObjectName><Text>3/4</Text><Size>0me,0me</Size><Connection><ConfigKey>[Skin],xdj_fx<Variable name="deck"/>_beat</ConfigKey><Transform><IsEqual>4</IsEqual></Transform><BindProperty>visible</BindProperty></Connection></Label>
+          <Label><ObjectName>XdjFxBeat</ObjectName><Text>1</Text><Size>0me,0me</Size><Connection><ConfigKey>[Skin],xdj_fx<Variable name="deck"/>_beat</ConfigKey><Transform><IsEqual>5</IsEqual></Transform><BindProperty>visible</BindProperty></Connection></Label>
+          <Label><ObjectName>XdjFxBeat</ObjectName><Text>2</Text><Size>0me,0me</Size><Connection><ConfigKey>[Skin],xdj_fx<Variable name="deck"/>_beat</ConfigKey><Transform><IsEqual>6</IsEqual></Transform><BindProperty>visible</BindProperty></Connection></Label>
+          <Label><ObjectName>XdjFxBeat</ObjectName><Text>4</Text><Size>0me,0me</Size><Connection><ConfigKey>[Skin],xdj_fx<Variable name="deck"/>_beat</ConfigKey><Transform><IsEqual>7</IsEqual></Transform><BindProperty>visible</BindProperty></Connection></Label>
+          <Label><ObjectName>XdjFxBeat</ObjectName><Text>8</Text><Size>0me,0me</Size><Connection><ConfigKey>[Skin],xdj_fx<Variable name="deck"/>_beat</ConfigKey><Transform><IsEqual>8</IsEqual></Transform><BindProperty>visible</BindProperty></Connection></Label>
+          <Label><ObjectName>XdjFxBeat</ObjectName><Text>16</Text><Size>0me,0me</Size><Connection><ConfigKey>[Skin],xdj_fx<Variable name="deck"/>_beat</ConfigKey><Transform><IsEqual>9</IsEqual></Transform><BindProperty>visible</BindProperty></Connection></Label>
+        </Children>
+      </WidgetGroup>
+    </Children>
+  </WidgetGroup>
+</Template>

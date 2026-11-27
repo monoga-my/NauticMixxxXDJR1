@@ -1,5 +1,20 @@
 # NauticMixxx native patches
 
+## 0049 — Beat FX mids-and-highs mode, Camelot keys, Aero category rail
+
+- `[EffectRack1_EffectUnitN],rx3_keep_lows` (units 1-4): when on, the chain
+  splits its input with a complementary 12 dB/octave crossover at 250 Hz. Only
+  the mids and highs go through the effects; the lows are added back dry, so
+  the output equals the input whenever the effects are neutral. The XDJ-R1
+  mapping toggles it with SHIFT + TAP.
+- Keys default to Camelot (Mixxx's Lancelot notation), set once on first
+  start so a later choice in Preferences is kept. rekordbox key names ("Am")
+  are converted on the BROWSE KEY column, the KEY category, its related keys
+  and INFO (`rx3::displayKey`).
+- BROWSE category rail: 128 px wide, each category on a tinted glossy glass
+  orb, bold labels sized to the row, long names on two lines (PLAY / LIST,
+  DATE / ADDED). Tests cover the label split and Camelot numbering.
+
 ## 0048 — Aero BROWSE and utility pages, ten-row browser
 
 Ten track rows per BROWSE page instead of twelve (`rx3::kBrowserVisibleRows`,

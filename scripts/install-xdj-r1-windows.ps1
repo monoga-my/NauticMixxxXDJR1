@@ -7,7 +7,7 @@
 # browser scripts and the RX3 PITCH / RX3 CRUSH Sound Color FX chains into
 # %LOCALAPPDATA%\NauticMixxx, then puts the presets the mapping loads by
 # position at the top of Mixxx's lists: REVERB, PING PONG, NOISE, FILTER,
-# PITCH, CRUSH (Quick Effects) and XDJ-R1 TRANS, FLANGER, ECHO (effect chains).
+# PITCH, CRUSH (Quick Effects) and XDJ-R1 BEAT FX (effect chains).
 # Your other presets are kept.
 [CmdletBinding()]
 param(
@@ -31,7 +31,7 @@ foreach ($shared in 'Nautic-RX3-Browser.js', 'Nautic-RX3-Encoder-Pioneer-Roland.
 }
 foreach ($chain in 'RX3 REVERB.xml', 'RX3 PING PONG.xml', 'RX3 NOISE.xml', 'RX3 FILTER.xml',
                    'RX3 PITCH.xml', 'RX3 CRUSH.xml',
-                   'XDJ-R1 TRANS.xml', 'XDJ-R1 FLANGER.xml', 'XDJ-R1 ECHO.xml') {
+                   'XDJ-R1 BEAT FX.xml', 'XDJ-R1 TRANS.xml', 'XDJ-R1 FLANGER.xml', 'XDJ-R1 ECHO.xml') {
     Copy-Item -LiteralPath (Join-Path $projectRoot "effects\chains\$chain") -Destination $chains -Force
 }
 
@@ -77,8 +77,8 @@ function Set-PresetOrder($listName, [string[]]$wanted) {
 # Sound Color FX: positions 1-6 of the QuickEffect list.
 Set-PresetOrder 'QuickEffectPresetList' @('RX3 REVERB', 'RX3 PING PONG', 'RX3 NOISE',
     'RX3 FILTER', 'RX3 PITCH', 'RX3 CRUSH')
-# Beat FX: positions 1-3 of the effect chain list (effect units 3 and 4).
-Set-PresetOrder 'ChainPresetList' @('XDJ-R1 TRANS', 'XDJ-R1 FLANGER', 'XDJ-R1 ECHO')
+# Beat FX: XDJ-R1 BEAT FX at position 1 of the effect chain list (effect units 3 and 4).
+Set-PresetOrder 'ChainPresetList' @('XDJ-R1 BEAT FX', 'XDJ-R1 TRANS', 'XDJ-R1 FLANGER', 'XDJ-R1 ECHO')
 $xml.Save($effects)
 
 Write-Host "XDJ-R1 preset installed in $controllers"

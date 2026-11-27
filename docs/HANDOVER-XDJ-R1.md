@@ -140,6 +140,19 @@ indexes the user-ordered visible-effects list, so it was not used.
 
 The patch-count checks were bumped 45 → 46.
 
+## Round 6: multi Beat FX, MODE fix, category rail, Camelot
+
+| Request | Change |
+| --- | --- |
+| Several Beat FX per deck, both decks at once | Deck 1 = effect unit 3, deck 2 = unit 4, each loaded with `effects/chains/XDJ-R1 BEAT FX.xml` (TRANS = tremolo, FLANGER, ECHO in slots 1-3; chain list position 1). Button = on + edited (flashes); SHIFT + button = off; LEVEL/DEPTH sets the edited slot's `meta`; BEAT sets its beat parameter (tremolo `parameter2` = 1/beats, flanger `parameter1`, echo `parameter1`) |
+| Mids and highs only | SHIFT + TAP (94/95 0x74) toggles `[EffectRack1_EffectUnitN],rx3_keep_lows` (patch 0049: 250 Hz complementary split in `EngineEffectChain`) |
+| FX on screen for both decks | `xdj_fx_pane.xml` / `xdj_fx_row.xml`: DECK 1 FX and DECK 2 FX replace the touch BEAT FX panel when `[Skin],xdj_fx_panes` = 1 (set by the mapping) |
+| MODE did not return to hot cues | The unit sends MODE as a state (0x7F, then 0x00 on the next press). A 0x00 more than 400 ms after the 0x7F now toggles too |
+| Category rail too small | Patch 0049: 128 px rail, glass orb icons, larger bold labels, PLAY / LIST on two lines; rows already share the full height |
+| Camelot keys | Patch 0049: Lancelot (= Camelot) notation set once; rekordbox key names converted in BROWSE, KEY category and INFO |
+
+Preview: [PERFORMANCE](aero-preview.png), [BROWSE](aero-preview-browse.png).
+
 ## Round 5: larger type, VIEW button, Aero everywhere
 
 Previews (Qt mock with the real `style.qss`): [FULL](aero-preview.png),

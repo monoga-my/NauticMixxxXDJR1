@@ -497,13 +497,13 @@ function Set-Rx3QuickEffectOrder {
         }
     }
 
-    # Beat FX presets the XDJ-R1 mapping loads by position (1-3).
+    # Beat FX presets the XDJ-R1 mapping loads by position (1 = XDJ-R1 BEAT FX).
     $chainList = $root.SelectSingleNode("ChainPresetList")
     if (-not $chainList) {
         $chainList = $effectsDocument.CreateElement("ChainPresetList")
         [void]$root.AppendChild($chainList)
     }
-    $beatFxPresets = @("XDJ-R1 TRANS", "XDJ-R1 FLANGER", "XDJ-R1 ECHO")
+    $beatFxPresets = @("XDJ-R1 BEAT FX", "XDJ-R1 TRANS", "XDJ-R1 FLANGER", "XDJ-R1 ECHO")
     foreach ($node in @($chainList.SelectNodes("ChainPresetName"))) {
         if ($beatFxPresets -contains $node.InnerText.Trim()) {
             [void]$chainList.RemoveChild($node)

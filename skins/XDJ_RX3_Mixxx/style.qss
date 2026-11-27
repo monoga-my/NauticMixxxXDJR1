@@ -3745,7 +3745,7 @@ QPushButton[rx3Bank="true"]:disabled { color: #6b7385; }
 #RX3LibraryDeckNumber { font-size: 14px; }
 #RX3LibraryDeckTimeCaption { font-size: 13px; background: transparent; }
 #RX3LibraryDeckBpmCaption { font-size: 11px; background: transparent; }
-#RX3LibraryDeckTime { background: transparent; }
+#RX3LibraryDeckTime { background: transparent; font-size: 26px; padding: 0 3px; }
 #RX3LibraryDeckBpmBox1, #RX3LibraryDeckBpmBox2 {
   background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #10172a, stop:0.5 #000000, stop:1 #05070d);
   border: 1px solid rgba(233, 248, 255, 0.85);
@@ -3770,3 +3770,63 @@ QMenu::item:selected {
       stop:0 #7fd8ff, stop:0.48 #2a9be6, stop:0.52 #1572c0, stop:1 #2b9fe8);
   color: #ffffff;
 }
+
+/* ---- XDJ-R1 Beat FX panes (one per deck, xdj_fx_pane.xml) ---- */
+#XdjFxPanes, #XdjFxPaneGap { background: transparent; }
+#XdjFxPane {
+  background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+      stop:0 #1d2638, stop:0.5 #0b0e17, stop:1 #10161f);
+  border: 1px solid rgba(255, 138, 200, 0.45);
+  border-radius: 12px;
+  padding: 0 0 4px 0;
+  qproperty-layoutSpacing: 2;
+}
+#XdjFxPaneTitleRow {
+  background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+      stop:0 #5e6886, stop:0.46 #323b52, stop:0.5 #1e2536, stop:1 #262f44);
+  border-top-left-radius: 11px;
+  border-top-right-radius: 11px;
+  border-bottom: 1px solid rgba(255, 138, 200, 0.55);
+  padding: 0 6px 0 10px;
+}
+#XdjFxPaneTitle { background: transparent; color: #ffffff; font-size: 14px; font-weight: bold; }
+#XdjFxMidHi {
+  background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+      stop:0 #e3faff, stop:0.45 #8fe3ff, stop:0.5 #33b6ee, stop:1 #7fdcff);
+  color: #04182a;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: bold;
+  qproperty-alignment: 'AlignCenter';
+}
+#XdjFxRow {
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  margin: 0 6px;
+  padding: 0 4px 0 1px;
+  qproperty-layoutSpacing: 6;
+}
+/* The effect LEVEL/DEPTH and BEAT are editing (its button flashes). */
+#XdjFxRow[highlight="1"] { border: 1px solid #6fd6ff; background: rgba(111, 214, 255, 0.10); }
+#XdjFxName {
+  background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+      stop:0 #2a3550, stop:0.46 #141b2b, stop:0.5 #0a0e18, stop:1 #121a2a);
+  color: #8a96ad;
+  border: 1px solid rgba(255, 138, 200, 0.30);
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: bold;
+  qproperty-alignment: 'AlignCenter';
+}
+/* On: a glowing pink gel. */
+#XdjFxName[highlight="1"] {
+  background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+      stop:0 #ffe6f4, stop:0.45 #ff9ad5, stop:0.5 #ff5fb4, stop:1 #ff9ad5);
+  color: #2b0420;
+  border: 1px solid #ffffff;
+}
+#XdjFxLevel { background: transparent; border-radius: 4px; }
+#XdjFxBeatRow { background: transparent; padding: 0 12px; qproperty-layoutSpacing: 6; }
+#XdjFxBeatCaption { background: transparent; color: #9fdcff; font-size: 12px; }
+#XdjFxBeat { background: transparent; color: #8fe9ff; font-size: 18px; qproperty-alignment: 'AlignRight | AlignVCenter'; }

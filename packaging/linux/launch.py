@@ -21,7 +21,7 @@ def seed_profile(resources: Path, profile: Path) -> None:
     for name in ('RX3 REVERB', 'RX3 PING PONG', 'RX3 NOISE', 'RX3 FILTER', 'RX3 PITCH', 'RX3 CRUSH'):
         ET.SubElement(presets, 'ChainPresetName').text = name
     chains = ET.SubElement(root, 'ChainPresetList')
-    for name in ('XDJ-R1 TRANS', 'XDJ-R1 FLANGER', 'XDJ-R1 ECHO'):
+    for name in ('XDJ-R1 BEAT FX', 'XDJ-R1 TRANS', 'XDJ-R1 FLANGER', 'XDJ-R1 ECHO'):
         ET.SubElement(chains, 'ChainPresetName').text = name
     effects = profile / 'effects.xml'
     if not effects.exists():

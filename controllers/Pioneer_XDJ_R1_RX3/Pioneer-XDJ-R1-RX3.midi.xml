@@ -883,6 +883,16 @@
                     <script-binding/>
                 </options>
             </control>
+            <control>
+                <description>SHIFT + TAP: Beat FX on the mids and highs only (lows stay dry)</description>
+                <group>[EffectRack1_EffectUnit3]</group>
+                <key>PioneerXDJR1.keepLowsButton</key>
+                <status>0x94</status>
+                <midino>0x74</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
             <!-- Browser, deck 1 side -->
             <control>
                 <description>SELECT turn: browse; in PERFORMANCE zoom the waveforms</description>
@@ -1526,6 +1536,16 @@
                 <key>PioneerXDJR1.beatFxLevelLsb</key>
                 <status>0xB5</status>
                 <midino>0x32</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <description>SHIFT + TAP: Beat FX on the mids and highs only (lows stay dry)</description>
+                <group>[EffectRack1_EffectUnit4]</group>
+                <key>PioneerXDJR1.keepLowsButton</key>
+                <status>0x95</status>
+                <midino>0x74</midino>
                 <options>
                     <script-binding/>
                 </options>

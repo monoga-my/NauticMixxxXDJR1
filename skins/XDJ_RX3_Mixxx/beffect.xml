@@ -4,7 +4,19 @@
     <Layout>vertical</Layout>
     <Size>0me,0me</Size>
     <Children>
-      <WidgetGroup><ObjectName>RX3FxBezel</ObjectName><Layout>vertical</Layout><Size>0me,314me</Size><Children>
+      <!-- With the XDJ-R1 mapping running, two Beat FX panes (one per deck)
+           replace the touch BEAT FX panel. -->
+      <WidgetGroup>
+        <ObjectName>XdjFxPanes</ObjectName><Layout>vertical</Layout><Size>0me,314me</Size>
+        <Connection><ConfigKey>[Skin],xdj_fx_panes</ConfigKey><BindProperty>visible</BindProperty></Connection>
+        <Children>
+          <Template src="skin:xdj_fx_pane.xml"><SetVariable name="deck">1</SetVariable><SetVariable name="unit">3</SetVariable></Template>
+          <WidgetGroup><ObjectName>XdjFxPaneGap</ObjectName><Size>0me,8f</Size></WidgetGroup>
+          <Template src="skin:xdj_fx_pane.xml"><SetVariable name="deck">2</SetVariable><SetVariable name="unit">4</SetVariable></Template>
+        </Children>
+      </WidgetGroup>
+      <WidgetGroup><ObjectName>RX3FxBezel</ObjectName><Layout>vertical</Layout><Size>0me,314me</Size>
+      <Connection><ConfigKey>[Skin],xdj_fx_panes</ConfigKey><Transform><Not/></Transform><BindProperty>visible</BindProperty></Connection><Children>
       <Label><ObjectName>RX3BeatFxTitle</ObjectName><Text>BEAT FX</Text></Label>
       <WidgetGroup><ObjectName>RX3FxContent</ObjectName><Layout>vertical</Layout><Children>
       <WidgetGroup><ObjectName>RX3FxSelectorGap</ObjectName><Size>0me,12f</Size></WidgetGroup>

@@ -130,6 +130,8 @@ for deck in (1, 2):
     script(unit, "beatFxLevelLsb", fx_cc, 0x22, "LEVEL/DEPTH (LSB)")
     script(unit, "beatFxLevelMsb", fx_cc, 0x12, "SHIFT + LEVEL/DEPTH (MSB)")
     script(unit, "beatFxLevelLsb", fx_cc, 0x32, "SHIFT + LEVEL/DEPTH (LSB)")
+    script(unit, "keepLowsButton", fx_note, 0x74,
+           "SHIFT + TAP: Beat FX on the mids and highs only (lows stay dry)")
 
     comment(f"Browser, deck {deck} side")
     script("[Library]", "selectTurn", cc, 0x40,

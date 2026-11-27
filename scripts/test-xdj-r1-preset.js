@@ -256,6 +256,31 @@ function engine_set(values, _mapping, group, key, value) { values.set(`${group},
     assert.deepEqual(midiCalls.at(-1), [0x90, 0x3B, 0x7F]);
 }
 
+// MODE: the unit sends its HOT CUE / SAMPLER state, 0x7F then 0x00 on the
+// next press. A 0x00 long after the 0x7F toggles back; a quick release does not.
+{
+    const {mapping, midiCalls} = load();
+    mapping.init();
+    const realNow = Date.now;
+    let now = 1000000;
+    Date.now = () => now;
+    try {
+        mapping.modeButton(0, 0x3B, 0x7F, 0x90, "[Channel1]");
+        assert.equal(mapping.padLayer[1], "key");
+        now += 1500; // the next press, sent as 0x00
+        mapping.modeButton(0, 0x3B, 0x00, 0x90, "[Channel1]");
+        assert.equal(mapping.padLayer[1], "hotcue", "second press returns to hot cues");
+        assert.deepEqual(midiCalls.at(-1), [0x90, 0x3B, 0x7F]);
+        now += 1500;
+        mapping.modeButton(0, 0x3B, 0x7F, 0x90, "[Channel1]");
+        now += 120; // a plain release right after the press
+        mapping.modeButton(0, 0x3B, 0x00, 0x90, "[Channel1]");
+        assert.equal(mapping.padLayer[1], "key", "a quick release is ignored");
+    } finally {
+        Date.now = realNow;
+    }
+}
+
 // VINYL: touch the top to scratch; CDJ mode bends with the whole platter.
 {
     const {mapping, values, scratch, midiCalls} = load();
@@ -279,41 +304,69 @@ function engine_set(values, _mapping, group, key, value) { values.set(`${group},
     close(values.get("[Channel1],jog"), 2);
 }
 
-// Beat FX: TRANS/FLANGER/ECHO drive the native Beat FX (unit 1); ROLL is a loop roll.
+// Beat FX: each deck has its own chain (unit 3 / unit 4); several effects at
+// once, the last pressed is edited (flashing), SHIFT + button turns one off.
 {
     const {mapping, values, midiCalls} = load();
     mapping.init();
-    const unit = "[EffectRack1_EffectUnit1]";
-    mapping.beatFxBeat(0, 0x00, 0x7F, 0xB4); // BEAT fully right
-    mapping.beatFxLevelMsb(0, 0x02, 0x40, 0xB4);
-    close(values.get("[RX3BeatFx],amount"), 0x40 * 128 / 16383);
+    const u3 = "[EffectRack1_EffectUnit3]", u4 = "[EffectRack1_EffectUnit4]";
+    const s = (unit, slot) => `[EffectRack1_EffectUnit${unit}_Effect${slot}]`;
+    assert.equal(values.get(`${u3},loaded_chain_preset`), 1, "XDJ-R1 BEAT FX chain on deck 1");
+    assert.equal(values.get(`${u4},loaded_chain_preset`), 1, "and on deck 2");
+    assert.equal(values.get(`${u3},group_[Channel1]_enable`), 1);
+    assert.equal(values.get(`${u3},group_[Channel2]_enable`), 0);
+    assert.equal(values.get(`${u4},group_[Channel2]_enable`), 1);
+    assert.equal(values.get(`${u3},mix`), 1);
+    assert.equal(values.get(`${u3},enabled`), 1);
+
+    mapping.beatFxLevelMsb(0, 0x02, 0x40, 0xB4); // LEVEL before any effect
+    mapping.beatFxButton(0, 0x46, 0x7F, 0x94); // TRANS on deck 1
+    mapping.beatFxButton(0, 0x48, 0x7F, 0x94); // ECHO on deck 1 as well
+    assert.equal(values.get(`${s(3, 1)},enabled`), 1, "TRANS on");
+    assert.equal(values.get(`${s(3, 3)},enabled`), 1, "ECHO on at the same time");
+    assert.equal(mapping.fxEdit[1], 2, "ECHO is edited");
+    close(values.get(`${s(3, 1)},meta`), 0x40 * 128 / 16383); // first level = knob
+    // LEVEL/DEPTH now changes ECHO only.
+    mapping.beatFxLevelMsb(0, 0x02, 0x7F, 0xB4);
+    close(values.get(`${s(3, 3)},meta`), 0x7F * 128 / 16383);
+    close(values.get(`${s(3, 1)},meta`), 0x40 * 128 / 16383);
+    // BEAT: 1/2 beat on ECHO = 0.5 beat delay.
+    mapping.beatFxBeat(0, 0x00, 40, 0xB4);
+    assert.equal(values.get(`${s(3, 3)},parameter1`), 0.5);
+    // Press TRANS again: it becomes the edited one; BEAT 1/4 = 4 gate cycles per beat.
+    mapping.beatFxButton(0, 0x46, 0x7F, 0x94);
+    assert.equal(mapping.fxEdit[1], 0);
+    mapping.beatFxBeat(0, 0x00, 26, 0xB4);
+    assert.equal(values.get(`${s(3, 1)},parameter2`), 4);
+    // The edited button flashes; the other lit one stays lit.
     midiCalls.length = 0;
-    mapping.beatFxButton(0, 0x48, 0x7F, 0x94); // ECHO on deck 1
-    assert.equal(mapping.unitFx, 1, "ECHO = fixed 1");
-    assert.equal(values.get(`${unit},group_[Channel1]_enable`), 1);
-    assert.equal(values.get(`${unit},group_[Channel2]_enable`) || 0, 0);
-    assert.equal(values.get(`${unit},group_[Master]_enable`) || 0, 0);
-    assert.equal(values.get(`${unit},enabled`), 1);
-    assert.equal(values.get("[EffectRack1_EffectUnit1_Effect1],enabled"), 1);
-    assert.equal(values.get("[RX3SidePanel],beatfx"), 1, "BEAT FX panel shown");
-    assert.ok(values.get("[RX3BeatFx],xpad_position") > 0.99, "BEAT moves the X-PAD");
-    assert.deepEqual(midiCalls.filter((m) => m[0] === 0x94 && m[1] === 0x48).pop(), [0x94, 0x48, 0x7F]);
-    // ECHO on deck 2 too: same effect, both decks.
-    mapping.beatFxButton(0, 0x48, 0x7F, 0x95);
-    assert.equal(values.get(`${unit},group_[Channel1]_enable`), 1);
-    assert.equal(values.get(`${unit},group_[Channel2]_enable`), 1);
-    // TRANS on deck 2: a different effect moves to deck 2 alone.
-    mapping.beatFxButton(0, 0x46, 0x7F, 0x95);
-    assert.equal(mapping.unitFx, 7, "TRANS = tremolo, fixed 7");
-    assert.equal(values.get(`${unit},group_[Channel1]_enable`), 0);
-    assert.equal(values.get(`${unit},group_[Channel2]_enable`), 1);
-    // Pressing the lit TRANS again turns the effect off.
-    mapping.beatFxButton(0, 0x46, 0x7F, 0x95);
-    assert.equal(values.get(`${unit},group_[Channel2]_enable`), 0);
-    assert.equal(values.get(`${unit},enabled`), 0);
-    // ROLL: loop roll at the BEAT size; SHIFT + ROLL again turns it off.
-    mapping.beatFxBeat(0, 0x00, 0x00, 0xB4); // 1/16 beat
+    mapping.blinkBeatFx();
+    const trans = midiCalls.filter((m) => m[0] === 0x94 && m[1] === 0x46).pop();
+    const echo = midiCalls.filter((m) => m[0] === 0x94 && m[1] === 0x48).pop();
+    assert.equal(trans[2], 0x00, "edited TRANS flashes");
+    assert.equal(echo[2], 0x7F, "ECHO stays lit");
+    // Deck 2 runs its own FLANGER at the same time.
+    mapping.beatFxButton(0, 0x47, 0x7F, 0x95);
+    assert.equal(values.get(`${s(4, 2)},enabled`), 1);
+    assert.equal(values.get(`${s(3, 1)},enabled`), 1, "deck 1 effects untouched");
+    // SHIFT + TRANS turns TRANS off; editing moves to the effect still on.
+    mapping.beatFxButton(0, 0x62, 0x7F, 0x94);
+    assert.equal(values.get(`${s(3, 1)},enabled`), 0);
+    assert.equal(values.get(`${s(3, 3)},enabled`), 1);
+    assert.equal(mapping.fxEdit[1], 2);
+    // SHIFT + TAP: mids and highs only on deck 1.
+    mapping.keepLowsButton(0, 0x74, 0x7F, 0x94);
+    assert.equal(values.get(`${u3},rx3_keep_lows`), 1);
+    assert.equal(values.get(`${u4},rx3_keep_lows`) || 0, 0);
+    mapping.keepLowsButton(0, 0x74, 0x7F, 0x94);
+    assert.equal(values.get(`${u3},rx3_keep_lows`), 0);
+    // The screen panes follow: deck 1 editing ECHO (3), deck 2 FLANGER (2).
+    assert.equal(values.get("[Skin],xdj_fx_panes"), 1);
+    assert.equal(values.get("[Skin],xdj_fx1_edit"), 3);
+    assert.equal(values.get("[Skin],xdj_fx2_edit"), 2);
+    // ROLL: loop roll at its BEAT size; SHIFT + ROLL stops it.
     mapping.beatFxButton(0, 0x49, 0x7F, 0x94);
+    mapping.beatFxBeat(0, 0x00, 0x00, 0xB4); // 1/16 beat
     assert.equal(values.get(`[Channel1],beatlooproll_${1 / 16}_activate`), 1);
     mapping.beatFxButton(0, 0x65, 0x7F, 0x94);
     assert.equal(values.get(`[Channel1],beatlooproll_${1 / 16}_activate`), 0);
@@ -423,8 +476,9 @@ function engine_set(values, _mapping, group, key, value) { values.set(`${group},
     has("0x91", "0x3E", "PioneerXDJR1.matchButton");
     has("0xB0", "0x40", "PioneerXDJR1.selectTurn");
     has("0xB1", "0x41", "PioneerXDJR1.selectTurn");
-    for (const chain of ["RX3 PITCH.xml", "RX3 CRUSH.xml", "XDJ-R1 TRANS.xml",
-        "XDJ-R1 FLANGER.xml", "XDJ-R1 ECHO.xml"]) {
+    has("0x94", "0x74", "PioneerXDJR1.keepLowsButton");
+    has("0x95", "0x74", "PioneerXDJR1.keepLowsButton");
+    for (const chain of ["RX3 PITCH.xml", "RX3 CRUSH.xml", "XDJ-R1 BEAT FX.xml"]) {
         assert.ok(fs.existsSync(path.join(root, "effects", "chains", chain)), chain);
     }
 }

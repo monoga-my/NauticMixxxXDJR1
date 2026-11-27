@@ -1,0 +1,363 @@
+diff --git a/src/engine/effects/engineeffectchain.cpp b/src/engine/effects/engineeffectchain.cpp
+index b805bb6..ef7cca2 100644
+--- a/src/engine/effects/engineeffectchain.cpp
++++ b/src/engine/effects/engineeffectchain.cpp
+@@ -4,6 +4,9 @@
+ #include "util/defs.h"
+ #include "util/sample.h"
+ 
++#include <algorithm>
++#include <cmath>
++
+ EngineEffectChain::EngineEffectChain(const QString& group,
+         const QSet<ChannelHandleAndGroup>& registeredInputChannels,
+         const QSet<ChannelHandleAndGroup>& registeredOutputChannels)
+@@ -12,7 +15,13 @@ EngineEffectChain::EngineEffectChain(const QString& group,
+           m_mixMode(EffectChainMixMode::DrySlashWet),
+           m_dMix(0),
+           m_buffer1(kMaxEngineSamples),
+-          m_buffer2(kMaxEngineSamples) {
++          m_buffer2(kMaxEngineSamples),
++          m_rx3Lows(kMaxEngineSamples),
++          m_rx3Highs(kMaxEngineSamples) {
++    if (group.startsWith("[EffectRack1_EffectUnit")) {
++        m_rx3KeepLows = std::make_unique<ControlObject>(
++                ConfigKey(group, "rx3_keep_lows"), true, false, false, 0);
++    }
+     if (group == "[EffectRack1_EffectUnit1]") {
+         m_rx3BpmDisplay=std::make_unique<ControlObject>(ConfigKey("[RX3BeatFx]","bpm"),true,false,false,0);
+         m_rx3BpmMode=std::make_unique<ControlObject>(ConfigKey("[RX3BeatFx]","bpm_mode"),true,false,true,0);
+@@ -35,6 +44,29 @@ EngineEffectChain::EngineEffectChain(const QString& group,
+ EngineEffectChain::~EngineEffectChain() {
+ }
+ 
++namespace {
++// Complementary split: lows = 12 dB/octave low-pass of the input, highs =
++// input - lows, so lows + highs always equal the input exactly.
++void rx3SplitLows(CSAMPLE* state, const CSAMPLE* pIn, CSAMPLE* pLows,
++        CSAMPLE* pHighs, unsigned int numSamples, double sampleRate) {
++    constexpr double kCornerHz = 250.0;
++    constexpr double kTwoPi = 6.283185307179586;
++    const CSAMPLE a = static_cast<CSAMPLE>(
++            std::exp(-kTwoPi * kCornerHz / std::max(1.0, sampleRate)));
++    const CSAMPLE b = 1.0f - a;
++    for (unsigned int i = 0; i + 1 < numSamples; i += 2) {
++        for (unsigned int side = 0; side < 2; ++side) {
++            CSAMPLE* stage = state + 2 * side;
++            const CSAMPLE x = pIn[i + side];
++            stage[0] = b * x + a * stage[0];
++            stage[1] = b * stage[0] + a * stage[1];
++            pLows[i + side] = stage[1];
++            pHighs[i + side] = x - stage[1];
++        }
++    }
++}
++} // namespace
++
+ bool EngineEffectChain::addEffect(EngineEffect* pEffect, int iIndex) {
+     if (iIndex < 0) {
+         if (kEffectDebugOutput) {
+@@ -241,12 +273,18 @@ bool EngineEffectChain::process(const ChannelHandle& inputHandle,
+                 numSamples/2.0/sampleRate*bpm/60.0,1.0);
+         effectFeatures.beat_fraction_buffer_end=channelStatus.manualBeatPhase;
+     }
++    const bool keepLows = m_rx3KeepLows && m_rx3KeepLows->get() > 0;
+     if (effectiveChainEnableState != EffectEnableState::Disabled) {
+         // Ramping code inside the effects need to access the original samples
+         // after writing to the output buffer. This requires not to use the same buffer
+         // for in and output: Also, ChannelMixer::applyEffectsAndMixChannels
+         // requires that the input buffer does not get modified.
+         CSAMPLE* pIntermediateInput = pIn;
++        if (keepLows) {
++            rx3SplitLows(channelStatus.rx3LowState, pIn, m_rx3Lows.data(),
++                    m_rx3Highs.data(), numSamples, sampleRate.toDouble());
++            pIntermediateInput = m_rx3Highs.data();
++        }
+         CSAMPLE* pIntermediateOutput;
+         SINT effectChainGroupDelayFrames = 0;
+         bool firstAddDryToWetEffectProcessed = false;
+@@ -317,6 +355,12 @@ bool EngineEffectChain::process(const ChannelHandle& inputHandle,
+                         lastCallbackMixKnob,
+                         currentMixKnob,
+                         numSamples);
++                if (keepLows) {
++                    // The wet path carried only the highs: put the dry lows
++                    // back at the wet share, so lows + dry share = input.
++                    SampleUtil::addWithRampingGain(pOut, m_rx3Lows.data(),
++                            lastCallbackMixKnob, currentMixKnob, numSamples);
++                }
+             } else {
+                 // Dry+Wet mode: output = input + (wet * mix knob)
+                 SampleUtil::copy2WithRampingGain(
+diff --git a/src/engine/effects/engineeffectchain.h b/src/engine/effects/engineeffectchain.h
+index 6a594c0..9a8a516 100644
+--- a/src/engine/effects/engineeffectchain.h
++++ b/src/engine/effects/engineeffectchain.h
+@@ -54,6 +54,10 @@ class EngineEffectChain final : public EffectsRequestHandler {
+                   enableState(EffectEnableState::Disabled) {
+         }
+         double manualBeatPhase = 0;
++        // Two cascaded one-pole low-pass stages per stereo side (L1, L2,
++        // R1, R2) for rx3_keep_lows. Plain values, so the status stays
++        // copyable without allocating in the audio thread.
++        CSAMPLE rx3LowState[4] = {0, 0, 0, 0};
+         CSAMPLE oldMixKnob;
+         EffectEnableState enableState;
+     };
+@@ -71,6 +75,11 @@ class EngineEffectChain final : public EffectsRequestHandler {
+     std::unique_ptr<ControlObject> m_rx3BpmDisplay;
+     std::unique_ptr<ControlObject> m_rx3BpmMode;
+     std::unique_ptr<ControlObject> m_rx3ManualBpm;
++    // [EffectRack1_EffectUnitN],rx3_keep_lows: effects process only the mids
++    // and highs; the lows below about 250 Hz pass through dry.
++    std::unique_ptr<ControlObject> m_rx3KeepLows;
++    mixxx::SampleBuffer m_rx3Lows;
++    mixxx::SampleBuffer m_rx3Highs;
+     QString m_group;
+     bool m_enableState;
+     EffectChainMixMode::Type m_mixMode;
+diff --git a/src/library/rekordbox/rekordboxruntimetrackmodel.cpp b/src/library/rekordbox/rekordboxruntimetrackmodel.cpp
+index 0f1ddfa..50b0058 100644
+--- a/src/library/rekordbox/rekordboxruntimetrackmodel.cpp
++++ b/src/library/rekordbox/rekordboxruntimetrackmodel.cpp
+@@ -13,6 +13,7 @@
+ #include "library/rekordbox/rekordboxusbsession.h"
+ #include "mixer/playerinfo.h"
+ #include "moc_rekordboxruntimetrackmodel.cpp"
++#include "track/keyutils.h"
+ #include "track/track.h"
+ 
+ namespace mixxx::rekordbox {
+@@ -387,8 +388,13 @@ QVariant RekordboxRuntimeTrackModel::rawValue(const QModelIndex& index) const {
+                 : QVariant();
+     case ColumnCache::COLUMN_LIBRARYTABLE_BPM:
+         return track->bpm ? QVariant::fromValue(*track->bpm) : QVariant();
+-    case ColumnCache::COLUMN_LIBRARYTABLE_KEY:
+-        return track->key;
++    case ColumnCache::COLUMN_LIBRARYTABLE_KEY: {
++        // rekordbox stores key names ("Am"); show them in the chosen
++        // notation (Camelot by default), like the deck readouts.
++        const auto key = KeyUtils::guessKeyFromText(track->key);
++        return key == mixxx::track::io::key::INVALID ? QVariant(track->key)
++                                                     : QVariant(KeyUtils::keyToString(key));
++    }
+     case ColumnCache::COLUMN_LIBRARYTABLE_FILETYPE:
+         return QFileInfo(track->resolvedAudioPath).suffix();
+     default:
+diff --git a/src/preferences/dialog/dlgprefkey.cpp b/src/preferences/dialog/dlgprefkey.cpp
+index 067e3b6..1c18585 100644
+--- a/src/preferences/dialog/dlgprefkey.cpp
++++ b/src/preferences/dialog/dlgprefkey.cpp
+@@ -47,6 +47,14 @@ DlgPrefKey::DlgPrefKey(QWidget* parent, UserSettingsPointer pConfig)
+ 
+     m_pKeyNotation = new ControlProxy(mixxx::library::prefs::kKeyNotationConfigKey, this);
+ 
++    // NauticMixxx shows keys in Camelot (Mixxx's Lancelot notation) on the
++    // deck readouts and in BROWSE. Applied once, so a notation chosen later
++    // in Preferences is kept.
++    const ConfigKey camelotDefault(KEY_CONFIG_KEY, QStringLiteral("NauticCamelotDefault"));
++    if (!pConfig->getValue(camelotDefault, false)) {
++        pConfig->setValue(ConfigKey(KEY_CONFIG_KEY, KEY_NOTATION), QString(KEY_NOTATION_LANCELOT));
++        pConfig->setValue(camelotDefault, true);
++    }
+     loadSettings();
+     banalyzerenabled->setEnabled(false);
+     breanalyzeEnabled->setEnabled(false);
+diff --git a/src/preferences/keydetectionsettings.h b/src/preferences/keydetectionsettings.h
+index c547764..b382a6e 100644
+--- a/src/preferences/keydetectionsettings.h
++++ b/src/preferences/keydetectionsettings.h
+@@ -39,7 +39,7 @@ class KeyDetectionSettings {
+ 
+     // TODO(rryan): Enum
+     DEFINE_PREFERENCE_HELPERS(KeyNotation, QString,
+-                              KEY_CONFIG_KEY, KEY_NOTATION, KEY_NOTATION_TRADITIONAL);
++                              KEY_CONFIG_KEY, KEY_NOTATION, KEY_NOTATION_LANCELOT);
+ 
+     QString getCustomKeyNotation(mixxx::track::io::key::ChromaticKey key) {
+         return m_pConfig->getValue<QString>(ConfigKey(KEY_CONFIG_KEY,
+diff --git a/src/test/rx3display_test.cpp b/src/test/rx3display_test.cpp
+index 0199f6d..ab31f69 100644
+--- a/src/test/rx3display_test.cpp
++++ b/src/test/rx3display_test.cpp
+@@ -729,6 +729,21 @@ TEST(Rx3BrowserPlayback, PlayReplacesBothNoteAndHAtReferenceAndRetinaSizes) {
+         EXPECT_EQ(QColor("#01FF02"),play.pixelColor(14*dpr,16*dpr));
+     }
+ }
++#include "track/keyutils.h"
++#include "widget/rx3browsernavigation.h"
++TEST(Rx3BrowserPlayback, CategoryLabelsSplitLongNamesOverTwoLines) {
++    EXPECT_EQ(QString("PLAY\nLIST"),rx3::browserCategoryLines("PLAYLIST"));
++    EXPECT_EQ(QString("DATE\nADDED"),rx3::browserCategoryLines("DATE ADDED"));
++    EXPECT_EQ(QString("ARTIST"),rx3::browserCategoryLines("ARTIST"));
++    EXPECT_NE(rx3::browserCategoryTint("ARTIST"),rx3::browserCategoryTint("ALBUM"));
++}
++TEST(Rx3BrowserPlayback, CamelotIsMixxxLancelotNumbering) {
++    using KN=KeyUtils::KeyNotation;
++    EXPECT_EQ(QString("8A"),KeyUtils::keyToString(KeyUtils::guessKeyFromText("Am"),KN::Lancelot));
++    EXPECT_EQ(QString("8B"),KeyUtils::keyToString(KeyUtils::guessKeyFromText("C"),KN::Lancelot));
++    EXPECT_EQ(QString("12A"),KeyUtils::keyToString(KeyUtils::guessKeyFromText("Dbm"),KN::Lancelot));
++    EXPECT_EQ(QString("not a key"),rx3::displayKey("not a key"));
++}
+ TEST(Rx3BrowserPlayback, RenderBrowserIconReview) {
+     const auto output=qEnvironmentVariable("NAUTIC_BROWSER_ARTIFACT_DIR");
+     if (output.isEmpty()) return;
+diff --git a/src/widget/rx3browsericons.h b/src/widget/rx3browsericons.h
+index 2a2cc84..e869392 100644
+--- a/src/widget/rx3browsericons.h
++++ b/src/widget/rx3browsericons.h
+@@ -103,4 +103,40 @@ inline void drawBrowserCategoryIcon(QPainter* p, const QRectF& rect,
+     }
+     p->restore();
+ }
++// Aero category label: long names on two lines (PLAY / LIST, DATE / ADDED).
++inline QString browserCategoryLines(const QString& label) {
++    if (label == "PLAYLIST") return QStringLiteral("PLAY\nLIST");
++    if (label == "RECORDING") return QStringLiteral("RECORD\nING");
++    if (label.contains(' ')) return label.section(' ', 0, 0) + "\n" + label.section(' ', 1);
++    return label;
++}
++// Each category gets its own pastel tint so the rail reads at a glance.
++inline QColor browserCategoryTint(const QString& label) {
++    if (label == "ARTIST" || label == "PLAYLIST" || label == "RATING" || label == "LABEL")
++        return QColor("#ff8ac8");
++    if (label == "TRACK" || label == "TRACKS" || label == "HISTORY" || label == "GENRE")
++        return QColor("#c3a8ff");
++    return QColor("#6fd6ff");
++}
++// Glossy glass orb behind the line icon: tinted body lit from below, a soft
++// rim and a curved white specular cap.
++inline void drawAeroCategoryIcon(QPainter* p, const QRectF& rect, const QString& label, bool selected) {
++    const QColor tint = browserCategoryTint(label);
++    p->save(); p->setRenderHint(QPainter::Antialiasing);
++    QLinearGradient body(rect.topLeft(), rect.bottomLeft());
++    body.setColorAt(0, tint.darker(selected ? 170 : 300));
++    body.setColorAt(0.55, tint.darker(selected ? 120 : 190));
++    body.setColorAt(1, selected ? tint.lighter(120) : tint);
++    p->setBrush(body);
++    p->setPen(QPen(selected ? QColor(255, 255, 255, 230) : tint.lighter(130), rect.width() / 32));
++    p->drawEllipse(rect);
++    const QRectF cap(rect.left() + rect.width() * 0.17, rect.top() + rect.height() * 0.05,
++            rect.width() * 0.66, rect.height() * 0.44);
++    QLinearGradient shine(cap.topLeft(), cap.bottomLeft());
++    shine.setColorAt(0, QColor(255, 255, 255, 170)); shine.setColorAt(1, QColor(255, 255, 255, 0));
++    p->setPen(Qt::NoPen); p->setBrush(shine); p->drawEllipse(cap);
++    p->restore();
++    const qreal inset = rect.width() * 0.22;
++    drawBrowserCategoryIcon(p, rect.adjusted(inset, inset, -inset, -inset), label, Qt::white);
++}
+ } // namespace rx3
+diff --git a/src/widget/rx3browsernavigation.h b/src/widget/rx3browsernavigation.h
+index 662a2ce..5c759eb 100644
+--- a/src/widget/rx3browsernavigation.h
++++ b/src/widget/rx3browsernavigation.h
+@@ -19,6 +19,11 @@ inline BrowserRows visibleBrowserRows(int availableHeight) {
+     const int row=available/(kBrowserVisibleRows+1);
+     return {row,available-kBrowserVisibleRows*row};
+ }
++// A rekordbox key name ("Am") in the current notation (Camelot by default).
++inline QString displayKey(const QString& raw) {
++    const auto key=KeyUtils::guessKeyFromText(raw);
++    return key==mixxx::track::io::key::INVALID ? raw : KeyUtils::keyToString(key);
++}
+ inline int categoryRank(const QString& label) {
+     const QStringList order={"ARTIST","ALBUM","TRACK","KEY","PLAYLIST","HISTORY","MATCHING","FOLDER","REC"};
+     QString normalized=label.toUpper();
+diff --git a/src/widget/wrx3browser.h b/src/widget/wrx3browser.h
+index 229ebe1..f725d3d 100644
+--- a/src/widget/wrx3browser.h
++++ b/src/widget/wrx3browser.h
+@@ -37,6 +37,7 @@
+ #include "widget/wlibrarysidebar.h"
+ #include "widget/wmainmenubar.h"
+ #include "widget/wtracktableview.h"
++#include <QFontMetrics>
+ #include "widget/rx3browsericons.h"
+ #include "widget/rx3browsernavigation.h"
+ #include "widget/rx3aero.h"
+@@ -59,15 +60,27 @@ class Rx3CategoryDelegate : public QStyledItemDelegate {
+         p->save();
+         const bool selected=option.state & QStyle::State_Selected;
+         const bool categoryFocus=parent()->property("categoryFocus").toBool();
+-        p->fillRect(option.rect, QColor(selected ? (categoryFocus ? "#007CE0" : "#777777") : "#202020"));
+-        if(selected) p->fillRect(QRect(option.rect.topLeft(),QSize(4,option.rect.height())),Qt::white);
++        const QRect r=option.rect;
++        if(selected && categoryFocus) rx3::aero::fillSelection(p,r);
++        else if(selected) rx3::aero::fillGradient(p,r,{{0,QColor("#5a6680")},{0.5,QColor("#2a3246")},{1,QColor("#353f57")}});
++        else rx3::aero::fillGradient(p,r,{{0,QColor("#2e3850")},{0.5,QColor("#131a29")},{1,QColor("#1a2236")}});
++        p->setPen(QColor("#05070d"));p->drawLine(r.bottomLeft(),r.bottomRight());
++        if(selected) p->fillRect(QRect(r.topLeft(),QSize(4,r.height())),Qt::white);
+         const QString label=index.data().toString().section('\n',1);
+-        const qreal scale=option.rect.height()/65.0;
+-        const qreal cx=option.rect.center().x(), cy=option.rect.y()+22*scale;
+-        rx3::drawBrowserCategoryIcon(p,
+-                QRectF(cx-16*scale,cy-16*scale,32*scale,32*scale),label,QColor("#bcbcbc"));
+-        QFont font("Arial");font.setPixelSize(qMax(9,qRound(11*scale)));p->setFont(font);p->setPen(Qt::white);
+-        p->drawText(option.rect.adjusted(4,qRound(37*scale),-4,-4),Qt::AlignHCenter|Qt::AlignTop,label);
++        const QString lines=rx3::browserCategoryLines(label);
++        const int lineCount=lines.count('\n')+1;
++        // Icon on top, one or two label lines below, both scaled to the row.
++        const qreal icon=qMin(r.width()*0.46,r.height()*(lineCount>1 ? 0.40 : 0.52));
++        QFont font("Arial");font.setBold(true);
++        int pixels=qMax(10,qRound(qMin(r.height()*(lineCount>1 ? 0.17 : 0.18),r.width()*0.15)));
++        font.setPixelSize(pixels);
++        for(const auto& line:lines.split('\n'))
++            while(pixels>10 && QFontMetrics(font).horizontalAdvance(line)>r.width()-10) font.setPixelSize(--pixels);
++        const qreal textHeight=QFontMetrics(font).height()*lineCount;
++        const qreal top=r.y()+(r.height()-icon-4-textHeight)/2;
++        rx3::drawAeroCategoryIcon(p,QRectF(r.center().x()-icon/2,top,icon,icon),label,selected);
++        p->setFont(font);p->setPen(Qt::white);
++        p->drawText(QRectF(r.x()+4,top+icon+4,r.width()-8,textHeight),Qt::AlignHCenter|Qt::AlignTop,lines);
+         p->restore();
+     }
+ };
+@@ -418,8 +431,8 @@ class WRx3Browser : public QWidget, public WBaseWidget {
+     void resizeEvent(QResizeEvent* event) override {
+         QWidget::resizeEvent(event);
+         const double scale = qMax(0.6, height()/690.0);
+-        m_categories->setFixedWidth(qRound(96*scale));
+-        m_searchRail->setFixedWidth(qRound(96*scale));m_searchRail->item(0)->setSizeHint(QSize(qRound(96*scale),qRound(65*scale)));
++        m_categories->setFixedWidth(qRound(128*scale));
++        m_searchRail->setFixedWidth(qRound(128*scale));m_searchRail->item(0)->setSizeHint(QSize(qRound(128*scale),qRound(65*scale)));
+         m_headerWidget->setFixedHeight(qRound(78*scale));
+         for(auto* button:m_headerButtons) button->setFixedHeight(qRound(46*scale));
+         m_source->setFixedWidth(qRound(100*scale));
+@@ -658,7 +671,7 @@ class WRx3Browser : public QWidget, public WBaseWidget {
+             const auto current=catalog();QStringList rows;
+             if(current) {rx3::TrackFilter filter;filter.referenceKey=value;filter.keyMode=1;
+                 const auto tracks=current->tracks();
+-                for(auto id:filter.apply(tracks)) if(!rows.contains(tracks.value(id).key)) rows.append(tracks.value(id).key);
++                for(auto id:filter.apply(tracks)) {const auto key=rx3::displayKey(tracks.value(id).key);if(!rows.contains(key)) rows.append(key);}
+             }
+             setPreview("RELATED KEY",rows);return;
+         }
+@@ -867,7 +880,7 @@ class WRx3Browser : public QWidget, public WBaseWidget {
+         if(field=="artist") return track.artist;
+         if(field=="album") return track.album;
+         if(field=="genre") return track.genre;
+-        if(field=="key") return track.key;
++        if(field=="key") return rx3::displayKey(track.key);
+         if(field=="bpm") return track.bpm ? QString::number(*track.bpm,'f',1) : QString();
+         if(field=="rating") return track.rating ? QString::number(*track.rating) : QString();
+         return track.rawMetadata.value(field).toVariant().toString();
+diff --git a/src/widget/wrx3trackinfo.h b/src/widget/wrx3trackinfo.h
+index 11421ee..d3be0d8 100644
+--- a/src/widget/wrx3trackinfo.h
++++ b/src/widget/wrx3trackinfo.h
+@@ -1,5 +1,7 @@
+ #pragma once
+ 
++#include "widget/rx3browsernavigation.h"
++
+ #include <QFrame>
+ #include <QHBoxLayout>
+ #include <QLabel>
+@@ -34,7 +36,7 @@ inline InfoTrack infoTrack(RekordboxFeature* feature,const QString& location,Tra
+         info.rating=int(track.rating.value_or(0));info.artwork=track.resolvedArtworkPath;info.comment=track.comment;
+         info.values={track.title,track.artist,track.album,
+             QString("%1:%2").arg(seconds/60,2,10,QChar('0')).arg(seconds%60,2,10,QChar('0')),
+-            track.bpm?QString::number(*track.bpm,'f',1)+" bpm":QString(),track.key,QString(),
++            track.bpm?QString::number(*track.bpm,'f',1)+" bpm":QString(),rx3::displayKey(track.key),QString(),
+             track.rawMetadata.value("color_name").toString(),track.genre,track.rawMetadata.value("date_added").toString()};
+         info.number=track.rawMetadata.value("track_number").toInt();
+     } else if(loaded) {
