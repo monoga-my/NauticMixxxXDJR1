@@ -176,8 +176,26 @@ index c547764..b382a6e 100644
  
      QString getCustomKeyNotation(mixxx::track::io::key::ChromaticKey key) {
          return m_pConfig->getValue<QString>(ConfigKey(KEY_CONFIG_KEY,
+diff --git a/src/test/rx3beatfx_test.cpp b/src/test/rx3beatfx_test.cpp
+index 57ca70b..64b24f9 100644
+--- a/src/test/rx3beatfx_test.cpp
++++ b/src/test/rx3beatfx_test.cpp
+@@ -577,9 +577,10 @@ TEST_F(Rx3BeatFxTest, SelectedFavoriteAndBeatOutlineSurviveMomentaryXPadRelease)
+     const auto color = [&](int x, int y) {
+         return image.pixelColor(qRound(x * ratio), qRound(y * ratio));
+     };
+-    EXPECT_EQ(QColor(Qt::white), color(halfBeat.x(), 1));
+-    EXPECT_NE(QColor(Qt::white), color(halfBeat.x(), 2));
+-    EXPECT_NE(QColor(Qt::white), color(pad->width() / 16, 1));
++    // The selected beat's glass orb stays lit after release: its lower body
++    // is brighter than an unselected orb of the same (cyan) group.
++    const int body = pad->height() * 3 / 4;
++    EXPECT_GT(color(halfBeat.x(), body).lightness(), color(pad->width() / 16, body).lightness() + 20);
+     const auto directory = qEnvironmentVariable("RX3_XPAD_RENDER_DIR");
+     if (!directory.isEmpty()) EXPECT_TRUE(image.save(directory + "/echo-half-selected-released.png"));
+     QTest::mousePress(pad, Qt::LeftButton, Qt::NoModifier, halfBeat);
 diff --git a/src/test/rx3display_test.cpp b/src/test/rx3display_test.cpp
-index 0199f6d..200b73b 100644
+index 0199f6d..553c489 100644
 --- a/src/test/rx3display_test.cpp
 +++ b/src/test/rx3display_test.cpp
 @@ -729,6 +729,31 @@ TEST(Rx3BrowserPlayback, PlayReplacesBothNoteAndHAtReferenceAndRetinaSizes) {
@@ -212,6 +230,26 @@ index 0199f6d..200b73b 100644
  TEST(Rx3BrowserPlayback, RenderBrowserIconReview) {
      const auto output=qEnvironmentVariable("NAUTIC_BROWSER_ARTIFACT_DIR");
      if (output.isEmpty()) return;
+@@ -829,7 +854,9 @@ int deckWavePixels(const QImage& image) {
+     int result=0;
+     for(int y=0;y<image.height();++y) for(int x=0;x<image.width();++x) {
+         const auto color=image.pixelColor(x,y);
+-        if(color.red()>100 && color.green()<100 && color.blue()<70) ++result;
++        // Aero deck waves are soft pink (#FF5FB4); white text and the grey
++        // background are excluded.
++        if(color.red()>200 && color.green()<140 && color.blue()>120 && color.blue()<230) ++result;
+     }
+     return result;
+ }
+@@ -1085,7 +1112,7 @@ TEST_F(Rx3ReferenceScaleTest, UsbPresentationHasTwoColumnsAndTouchKeyboard) {
+             browser.resize(1280,height);QCoreApplication::processEvents();
+             Rx3BrowserTestAccess::fit(browser);QCoreApplication::processEvents();
+             EXPECT_EQ(0,categories->verticalScrollBar()->maximum()) << "height=" << height;
+-            EXPECT_EQ(11,preview->rowAt(preview->viewport()->height()-1)) << "height=" << height
++            EXPECT_EQ(rx3::kBrowserVisibleRows-1,preview->rowAt(preview->viewport()->height()-1)) << "height=" << height
+                     << " viewport=" << preview->viewport()->height() << " row=" << preview->rowHeight(0);
+         }
+     }
 diff --git a/src/widget/rx3browsericons.h b/src/widget/rx3browsericons.h
 index 2a2cc84..8490525 100644
 --- a/src/widget/rx3browsericons.h

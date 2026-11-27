@@ -18,6 +18,8 @@
   yellow for related keys (relative major/minor and one step either way on the
   Camelot wheel, `rx3::keyMatch`). Repaints when the master deck or its key
   changes.
+- Tests follow the Aero look from 0047/0048: pink deck-badge waves, the lit
+  X-PAD orb instead of a white outline, and ten BROWSE rows.
 
 ## 0048 — Aero BROWSE and utility pages, ten-row browser
 
