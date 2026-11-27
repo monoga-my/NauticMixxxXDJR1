@@ -1,0 +1,427 @@
+diff --git a/src/test/rx3display_test.cpp b/src/test/rx3display_test.cpp
+index 46092ad..0199f6d 100644
+--- a/src/test/rx3display_test.cpp
++++ b/src/test/rx3display_test.cpp
+@@ -898,15 +898,16 @@ TEST_F(Rx3ReferenceScaleTest, TwelveRowsNeverExposeTheThirteenthAtAnyHeight) {
+     table.show();
+     for(int height: {377,500,638,639,642,690,861,1020}) {
+         table.resize(600,height);
+-        const auto rows=rx3::twelveBrowserRows(height);
++        const auto rows=rx3::visibleBrowserRows(height);
+         table.fitRows(rows.rowHeight,rows.headerHeight);
+         QCoreApplication::processEvents();
+-        EXPECT_EQ(12*rows.rowHeight,table.viewport()->height());
+-        EXPECT_EQ(11,table.rowAt(table.viewport()->height()-1));
+-        EXPECT_EQ(rows.rowHeight,table.visualRect(table.model()->index(11,0)).height());
+-        EXPECT_GE(table.visualRect(table.model()->index(12,0)).top(),table.viewport()->height());
++        EXPECT_EQ(rx3::kBrowserVisibleRows*rows.rowHeight,table.viewport()->height());
++        const int last=rx3::kBrowserVisibleRows-1;
++        EXPECT_EQ(last,table.rowAt(table.viewport()->height()-1));
++        EXPECT_EQ(rows.rowHeight,table.visualRect(table.model()->index(last,0)).height());
++        EXPECT_GE(table.visualRect(table.model()->index(last+1,0)).top(),table.viewport()->height());
+         table.scrollTo(table.model()->index(20,0),QAbstractItemView::PositionAtTop);
+-        EXPECT_EQ(11,table.rowAt(table.viewport()->height()-1)-table.rowAt(0));
++        EXPECT_EQ(last,table.rowAt(table.viewport()->height()-1)-table.rowAt(0));
+         table.scrollToTop();
+     }
+ }
+@@ -1041,7 +1042,7 @@ TEST_F(Rx3ReferenceScaleTest, UsbPresentationHasTwoColumnsAndTouchKeyboard) {
+         auto* preview=browser.findChild<QTableWidget*>("RX3PlaylistPreviewTracks");
+         auto* categories=browser.findChild<QListWidget*>("RX3BrowserCategories");
+         ASSERT_TRUE(preview);ASSERT_TRUE(categories);
+-        EXPECT_EQ(1,preview->columnCount());EXPECT_EQ(12,preview->rowCount());
++        EXPECT_EQ(1,preview->columnCount());EXPECT_EQ(rx3::kBrowserVisibleRows,preview->rowCount());
+         EXPECT_EQ(QString("Track A"),preview->item(0,0)->text());
+         EXPECT_EQ(0,categories->verticalScrollBar()->maximum());
+         EXPECT_TRUE(categories->property("categoryFocus").toBool());capture("category-controller");
+@@ -1054,7 +1055,7 @@ TEST_F(Rx3ReferenceScaleTest, UsbPresentationHasTwoColumnsAndTouchKeyboard) {
+         EXPECT_EQ(divider->mapTo(&browser,QPoint(divider->width(),0)).x(),
+                 preview->mapTo(&browser,QPoint(0,0)).x());
+         const auto dividerImage=divider->grab().toImage();
+-        for(int y=0;y<dividerImage.height();++y) EXPECT_EQ(QColor("#777777"),dividerImage.pixelColor(0,y));
++        for(int y=0;y<dividerImage.height();++y) EXPECT_EQ(QColor("#3f86a8"),dividerImage.pixelColor(0,y));
+         // Overflow must stay navigable without reserving a black scrollbar strip.
+         Rx3BrowserTestAccess::overflowFacets(browser);QCoreApplication::processEvents();
+         EXPECT_GT(facets->verticalScrollBar()->maximum(),0);
+@@ -2602,8 +2603,8 @@ TEST_F(Rx3ReferenceScaleTest, UtilityActionCanReplaceMenuAndRowsMatchBrowserColo
+     const auto black=table->visualItemRect(table->item(2,0));
+     const auto gray=table->visualItemRect(table->item(3,0));
+     EXPECT_EQ(QColor("#000000"),image.pixelColor(150,black.center().y()));
+-    EXPECT_EQ(QColor("#262626"),image.pixelColor(150,gray.center().y()));
+-    EXPECT_EQ(QColor("#777777"),image.pixelColor(table->columnViewportPosition(1)-1,gray.center().y()));
++    EXPECT_EQ(QColor("#111725"),image.pixelColor(150,gray.center().y()));
++    EXPECT_EQ(QColor("#3a4a66"),image.pixelColor(table->columnViewportPosition(1)-1,gray.center().y()));
+     utility.enter();EXPECT_EQ(1,executions);EXPECT_EQ("REPLACEMENT",table->item(1,0)->text());
+ }
+ 
+diff --git a/src/widget/rx3aero.h b/src/widget/rx3aero.h
+new file mode 100644
+index 0000000..b18f832
+--- /dev/null
++++ b/src/widget/rx3aero.h
+@@ -0,0 +1,43 @@
++#pragma once
++
++#include <QColor>
++#include <QLinearGradient>
++#include <QPainter>
++#include <QRect>
++#include <QString>
++#include <initializer_list>
++#include <utility>
++
++// Dark Frutiger Aero palette for the RX3 pages that paint themselves or carry
++// their own style sheets (BROWSE, INFO, tools, UTILITY, SHORTCUT). The skin's
++// style.qss uses the same colours for everything else.
++namespace rx3::aero {
++
++// Style sheet fragments (no trailing semicolon).
++// Selected row or item: an icy-blue gel that keeps white text readable.
++inline const QString kSelect = QStringLiteral(
++        "qlineargradient(x1:0,y1:0,x2:0,y2:1,stop:0 #7fd8ff,stop:0.48 #2a9be6,"
++        "stop:0.52 #1572c0,stop:1 #2b9fe8)");
++// Selection while focus is elsewhere (for example on the category rail).
++inline const QString kSelectDim = QStringLiteral(
++        "qlineargradient(x1:0,y1:0,x2:0,y2:1,stop:0 #5a6680,stop:0.5 #2a3246,stop:1 #353f57)");
++
++inline QColor rowColor(int row) {
++    return row % 2 ? QColor("#111725") : QColor("#000000");
++}
++inline void fillGradient(QPainter* painter, const QRect& rect,
++        std::initializer_list<std::pair<qreal, QColor>> stops) {
++    QLinearGradient gradient(rect.topLeft(), rect.bottomLeft());
++    for (const auto& stop : stops) gradient.setColorAt(stop.first, stop.second);
++    painter->fillRect(rect, gradient);
++}
++inline void fillSelection(QPainter* painter, const QRect& rect) {
++    fillGradient(painter, rect, {{0, QColor("#7fd8ff")}, {0.48, QColor("#2a9be6")},
++            {0.52, QColor("#1572c0")}, {1, QColor("#2b9fe8")}});
++}
++inline void fillHeader(QPainter* painter, const QRect& rect) {
++    fillGradient(painter, rect, {{0, QColor("#56627e")}, {0.46, QColor("#2a3348")},
++            {0.5, QColor("#171d2c")}, {1, QColor("#1f2739")}});
++}
++
++} // namespace rx3::aero
+diff --git a/src/widget/rx3browsernavigation.h b/src/widget/rx3browsernavigation.h
+index 8dc4440..662a2ce 100644
+--- a/src/widget/rx3browsernavigation.h
++++ b/src/widget/rx3browsernavigation.h
+@@ -11,10 +11,13 @@ struct BrowserRows {
+     int rowHeight;
+     int headerHeight;
+ };
+-inline BrowserRows twelveBrowserRows(int availableHeight) {
+-    const int available=qMax(13,availableHeight);
+-    const int row=available/13;
+-    return {row,available-12*row};
++// Ten track rows per page (the RX3 shows twelve): larger rows and larger text
++// for small screens. The column header takes the remainder, about one row.
++inline constexpr int kBrowserVisibleRows=10;
++inline BrowserRows visibleBrowserRows(int availableHeight) {
++    const int available=qMax(kBrowserVisibleRows+1,availableHeight);
++    const int row=available/(kBrowserVisibleRows+1);
++    return {row,available-kBrowserVisibleRows*row};
+ }
+ inline int categoryRank(const QString& label) {
+     const QStringList order={"ARTIST","ALBUM","TRACK","KEY","PLAYLIST","HISTORY","MATCHING","FOLDER","REC"};
+diff --git a/src/widget/wrx3browser.h b/src/widget/wrx3browser.h
+index 2fd4f79..229ebe1 100644
+--- a/src/widget/wrx3browser.h
++++ b/src/widget/wrx3browser.h
+@@ -39,6 +39,7 @@
+ #include "widget/wtracktableview.h"
+ #include "widget/rx3browsericons.h"
+ #include "widget/rx3browsernavigation.h"
++#include "widget/rx3aero.h"
+ #include "widget/rx3libraryworkflow.h"
+ #include "widget/wrx3toolmenu.h"
+ #include "widget/wrx3utility.h"
+@@ -77,7 +78,7 @@ class Rx3SourceTree : public QTreeWidget {
+   protected:
+     void paintEvent(QPaintEvent* event) override {
+         QTreeWidget::paintEvent(event);
+-        QPainter painter(viewport());painter.setPen(QColor("#383838"));
++        QPainter painter(viewport());painter.setPen(QColor("#26324a"));
+         const int row=topLevelItemCount() ? qMax(1,visualItemRect(topLevelItem(0)).height()) : 84;
+         for(int y=row;y<viewport()->height();y+=row) painter.drawLine(0,y,viewport()->width(),y);
+     }
+@@ -91,12 +92,13 @@ class Rx3SourceDelegate : public QStyledItemDelegate {
+             QStyledItemDelegate::paint(painter,option,index);return;
+         }
+         painter->save();
+-        painter->fillRect(option.rect,option.state & QStyle::State_Selected?QColor("#007CE0"):QColor("#1b2026"));
++        if(option.state & QStyle::State_Selected) rx3::aero::fillSelection(painter,option.rect);
++        else painter->fillRect(option.rect,QColor("#101624"));
+         const int iconWidth=qRound(option.rect.height()*0.9);
+         const QRect iconRect(option.rect.left(),option.rect.top(),iconWidth,option.rect.height());
+         const int color=index.data(Qt::UserRole+1).toInt();
+         painter->fillRect(iconRect,color?rx3::sourceColor(color):
+-                option.state & QStyle::State_Selected?QColor("#007CE0"):QColor("#1b2026"));
++                option.state & QStyle::State_Selected?QColor("#1f8ad8"):QColor("#101624"));
+         QFont font("Arial");font.setPixelSize(qMax(12,option.rect.height()/5));painter->setFont(font);painter->setPen(Qt::white);
+         const QString slot=index.data(Qt::UserRole+2).toString();
+         painter->drawText(iconRect,Qt::AlignCenter,QString("▣\n%1").arg(slot));
+@@ -196,7 +198,7 @@ class WRx3Browser : public QWidget, public WBaseWidget {
+         columnLayout->addWidget(leftRows,1);
+         auto* divider=new QWidget(m_leftColumn);
+         divider->setObjectName("RX3BrowseColumnDivider");
+-        divider->setFixedWidth(1);divider->setStyleSheet("background:#777777;");
++        divider->setFixedWidth(1);divider->setStyleSheet("background:#3f86a8;");
+         columnLayout->addWidget(divider);
+         auto* leftLayout=new QVBoxLayout(leftRows);
+         leftLayout->setContentsMargins(0,0,0,0);leftLayout->setSpacing(0);
+@@ -271,7 +273,7 @@ class WRx3Browser : public QWidget, public WBaseWidget {
+         m_sourceMenu->findChild<QListWidget*>("RX3ToolsActions")->setObjectName("RX3SourceSettingsActions");
+         m_sourceMenu->findChild<QPushButton*>("RX3ToolsBack")->setObjectName("RX3SourceSettingsBack");
+         m_sourceMenu->findChild<QLabel*>("RX3ToolsStatus")->setFixedHeight(64);
+-        m_sourceMenu->setStyleSheet("#RX3BrowserTools {background:#202020;color:white;} #RX3BrowserTools QLabel {color:white;font-family:Arial;font-size:16px;} #RX3BrowserTools QListWidget {background:#202020;color:white;border:1px solid #aaa;font-family:Arial;font-size:19px;} #RX3BrowserTools QPushButton {background:#202020;color:white;border:1px solid #aaa;min-height:36px;} #RX3SourceSettingsBack[encoderFocus=\"true\"] {background:#007CE0;}");
++        m_sourceMenu->setStyleSheet("#RX3BrowserTools {background:qlineargradient(x1:0,y1:0,x2:0,y2:1,stop:0 #1d2638,stop:0.5 #0b0e17,stop:1 #10161f);color:white;} #RX3BrowserTools QLabel {color:white;background:transparent;font-family:Arial;font-size:18px;} #RX3BrowserTools QListWidget {background:#000;color:white;border:1px solid rgba(127,227,255,0.55);border-radius:8px;font-family:Arial;font-size:21px;} #RX3BrowserTools QPushButton {background:qlineargradient(x1:0,y1:0,x2:0,y2:1,stop:0 #3a4560,stop:0.46 #1b2233,stop:0.5 #0d1220,stop:1 #18223a);color:white;border:1px solid rgba(127,227,255,0.55);border-radius:10px;font-size:18px;min-height:36px;} #RX3SourceSettingsBack[encoderFocus=\"true\"] {background:qlineargradient(x1:0,y1:0,x2:0,y2:1,stop:0 #7fd8ff,stop:0.48 #2a9be6,stop:0.52 #1572c0,stop:1 #2b9fe8);}");
+         m_sourceSettings=new QPushButton("MY SETTINGS MENU",sourceInfoPanel);m_sourceSettings->setObjectName("RX3SourceSettings");
+         sourceInfoLayout->addWidget(m_sourceSettings);sourceInfoLayout->addStretch(1);
+         connect(m_sourceSettings,&QPushButton::clicked,this,[this]{openSourceSettings();});
+@@ -372,7 +374,7 @@ class WRx3Browser : public QWidget, public WBaseWidget {
+     bool canShowInfo() const {return m_pages->currentIndex()==0 && m_level==BrowserLevel::Tracks;}
+     void showTrackInfo(bool show) {
+         m_detailedInfo->setVisible(show && canShowInfo());
+-        m_infoButton->setStyleSheet(show?"color:#007CE0;":"");
++        m_infoButton->setStyleSheet(show?"color:#8fe9ff;":"");
+         if(show) {m_trackInfo->hide();updateTrackInfo();}
+     }
+     void infoJump(const QString& key,const rx3::InfoTrack& track) {
+@@ -484,7 +486,7 @@ class WRx3Browser : public QWidget, public WBaseWidget {
+         const bool categories=m_focus==NavigationTarget::Categories;
+         m_categories->setProperty("categoryFocus",categories);
+         m_categories->viewport()->update();
+-        const QString selection=categories ? "#777777" : "#007CE0";
++        const QString selection=categories ? rx3::aero::kSelectDim : rx3::aero::kSelect;
+         m_sidebar->setStyleSheet(QString("#RX3BrowserFolders::item {height:%1px;} #RX3BrowserFolders::item:selected {background:%2;color:#fff;}").arg(m_browseRowHeight).arg(selection));
+         m_facets->setStyleSheet(QString("#RX3BrowserFacets::item:selected {background:%1;color:#fff;}").arg(selection));
+     }
+@@ -499,7 +501,7 @@ class WRx3Browser : public QWidget, public WBaseWidget {
+                     categoryHeight/count+(i<categoryHeight%count ? 1 : 0)));
+         m_categories->doItemsLayout();
+         const int available=m_previewTracks->height()-2*m_previewTracks->frameWidth();
+-        const auto geometry=rx3::twelveBrowserRows(available);
++        const auto geometry=rx3::visibleBrowserRows(available);
+         const int row=geometry.rowHeight,header=geometry.headerHeight;
+         m_leftHeader->setFixedHeight(header);
+         if(m_browseRowHeight!=row) {m_browseRowHeight=row;updateNavigationHighlight();}
+@@ -562,7 +564,7 @@ class WRx3Browser : public QWidget, public WBaseWidget {
+     }
+     void setPreview(const QString& header,const QStringList& rows) {
+         m_previewTracks->clearContents();m_previewTracks->setHorizontalHeaderLabels({header});
+-        m_previewTracks->setRowCount(qMax(12,rows.size()));
++        m_previewTracks->setRowCount(qMax(rx3::kBrowserVisibleRows,rows.size()));
+         for(int i=0;i<rows.size();++i) m_previewTracks->setItem(i,0,new QTableWidgetItem(rows[i]));
+         m_previewTracks->show();m_preview->show();
+         QTimer::singleShot(0,this,[this]{fitBrowseRows();});
+diff --git a/src/widget/wrx3info.h b/src/widget/wrx3info.h
+index 6946bc4..5c27bd7 100644
+--- a/src/widget/wrx3info.h
++++ b/src/widget/wrx3info.h
+@@ -30,7 +30,7 @@ class WRx3Info : public QWidget {
+         auto* decks=new QVBoxLayout;decks->setSpacing(8);layout->addLayout(decks);
+         for(int i=0;i<2;++i) {
+             m_decks[i]=new QPushButton(this);m_decks[i]->setObjectName(QString("RX3InfoDeck%1").arg(i+1));
+-            m_decks[i]->setStyleSheet("QPushButton {background:#202020;color:white;border:1px solid #555;font-family:Arial;font-size:17px;text-align:left;padding:8px;border-top:2px solid #00839E;} QPushButton[chosen=\"true\"] {border:1px solid white;border-top:2px solid #00839E;}");
++            m_decks[i]->setStyleSheet("QPushButton {background:qlineargradient(x1:0,y1:0,x2:0,y2:1,stop:0 #1d2638,stop:0.5 #0b0e17,stop:1 #10161f);color:white;border:1px solid rgba(127,227,255,0.55);border-top:2px solid #6fd6ff;border-radius:10px;font-family:Arial;font-size:19px;text-align:left;padding:8px;} QPushButton[chosen=\"true\"] {border:1px solid #ff9ad5;border-top:2px solid #ff6ec7;}");
+             m_decks[i]->setFixedWidth(144);m_decks[i]->setMinimumHeight(130);decks->addWidget(m_decks[i]);
+             m_decks[i]->setAccessibleName(QString("Inspect deck %1").arg(i+1));
+             connect(m_decks[i],&QPushButton::clicked,this,[this,i]{m_deck=i+1;updateTrack();});
+@@ -40,7 +40,7 @@ class WRx3Info : public QWidget {
+         m_panel->setJump([this](const QString& key,const rx3::InfoTrack& track){if(m_browser) m_browser->infoJump(key,track);});
+         if(auto* label=canvas->findChild<QLabel*>("RX3InfoLabel")) {
+             m_toggle=new QPushButton("◀ INFO",label->parentWidget());m_toggle->setObjectName("RX3InfoToggle");
+-            m_toggle->setAccessibleName("Show or hide track information");m_toggle->setStyleSheet("QPushButton {color:#ddd;background:transparent;border:0;font-family:Arial;font-size:16px;} QPushButton[chosen=\"true\"] {color:#007CE0;}");
++            m_toggle->setAccessibleName("Show or hide track information");m_toggle->setStyleSheet("QPushButton {color:#ddd;background:transparent;border:0;font-family:Arial;font-size:18px;} QPushButton[chosen=\"true\"] {color:#8fe9ff;}");
+             if(auto* layout=label->parentWidget()->layout()) {layout->replaceWidget(label,m_toggle);label->hide();}
+             connect(m_toggle,&QPushButton::clicked,this,[this]{setOpen(!m_open);});
+         }
+diff --git a/src/widget/wrx3shortcut.h b/src/widget/wrx3shortcut.h
+index e91419c..1abe744 100644
+--- a/src/widget/wrx3shortcut.h
++++ b/src/widget/wrx3shortcut.h
+@@ -98,15 +98,15 @@ class WRx3Shortcut : public QFrame {
+             : QFrame(parent),m_config(std::move(config)),m_effects(effects) {
+         setObjectName("RX3Shortcut");setAttribute(Qt::WA_StyledBackground);
+         setStyleSheet("#RX3Shortcut {background:#000000;color:#fff;} "
+-                "#RX3Shortcut QLabel {color:#fff;background:transparent;font-family:Arial;font-size:14px;} "
+-                "#RX3Shortcut QLabel[section=\"true\"] {border-bottom:1px solid #a9a9ad;font-size:15px;} "
++                "#RX3Shortcut QLabel {color:#fff;background:transparent;font-family:Arial;font-size:16px;} "
++                "#RX3Shortcut QLabel[section=\"true\"] {border-bottom:1px solid rgba(127,227,255,0.55);color:#d6f2ff;font-size:16px;} "
+                 "#RX3Shortcut QFrame[encoderFocus=\"true\"] {border:1px solid white;} "
+                 "#RX3Shortcut QFrame[encoderFocus=\"false\"] {border:1px solid transparent;} "
+-                "#RX3Shortcut QPushButton {background:#202020;color:white;border:1px solid #ddd;"
+-                "font-family:Arial;font-size:16px;font-weight:normal;padding:3px;} "
+-                "#RX3Shortcut QPushButton[chosen=\"true\"] {background:#007CE0;} "
+-                "#RX3Shortcut QPushButton:disabled {color:#999;border-color:#888;} "
+-                "#RX3Shortcut QLabel#ShortcutStatus {font-size:12px;color:#ddd;}");
++                "#RX3Shortcut QPushButton {background:qlineargradient(x1:0,y1:0,x2:0,y2:1,stop:0 #3a4560,stop:0.46 #1b2233,stop:0.5 #0d1220,stop:1 #18223a);color:white;border:1px solid rgba(127,227,255,0.55);border-radius:9px;"
++                "font-family:Arial;font-size:17px;font-weight:normal;padding:3px;} "
++                "#RX3Shortcut QPushButton[chosen=\"true\"] {background:qlineargradient(x1:0,y1:0,x2:0,y2:1,stop:0 #7fd8ff,stop:0.48 #2a9be6,stop:0.52 #1572c0,stop:1 #2b9fe8);border-color:#e9fbff;} "
++                "#RX3Shortcut QPushButton:disabled {color:#7d879a;border-color:#3a4558;} "
++                "#RX3Shortcut QLabel#ShortcutStatus {font-size:14px;color:#d6f2ff;}");
+         auto* layout=new QVBoxLayout(this);layout->setContentsMargins(20,12,20,12);layout->setSpacing(9);
+         layout->setSizeConstraint(QLayout::SetNoConstraint);
+         auto* titleRow=new QHBoxLayout;
+@@ -153,7 +153,7 @@ class WRx3Shortcut : public QFrame {
+         left->addStretch(1);
+         auto* usb=new QFrame(this);usb->setObjectName("ShortcutUsbBlock");
+         usb->setAttribute(Qt::WA_StyledBackground);
+-        usb->setStyleSheet("#ShortcutUsbBlock {background:#202020;border:0;border-top:2px solid #00839E;}");
++        usb->setStyleSheet("#ShortcutUsbBlock {background:qlineargradient(x1:0,y1:0,x2:0,y2:1,stop:0 #1d2638,stop:0.5 #0b0e17,stop:1 #10161f);border:1px solid rgba(127,227,255,0.55);border-top:2px solid #6fd6ff;border-radius:10px;}");
+         right->addWidget(usb);
+         auto* usbColumn=new QVBoxLayout(usb);usbColumn->setContentsMargins(0,2,0,0);usbColumn->setSpacing(0);
+         m_source=new QLabel("SOURCE — SELECT USB",usb);m_source->setObjectName("ShortcutUsbSlot");
+@@ -173,7 +173,7 @@ class WRx3Shortcut : public QFrame {
+         m_rows.back().frame->setFixedHeight(74);
+         m_rows.back().frame->layout()->setContentsMargins(8,6,8,6);
+         auto* loadFrame=new QFrame(usb);loadFrame->setObjectName("ShortcutRow_usb_load");
+-        loadFrame->setStyleSheet("#ShortcutRow_usb_load {background:#191919;}");
++        loadFrame->setStyleSheet("#ShortcutRow_usb_load {background:#111725;border-radius:8px;}");
+         loadFrame->setAttribute(Qt::WA_StyledBackground);loadFrame->setProperty("encoderFocus",false);
+         loadFrame->setFixedHeight(74);sourceRow->addWidget(loadFrame);
+         auto* loadColumn=new QVBoxLayout(loadFrame);loadColumn->setContentsMargins(10,6,6,6);loadColumn->setSpacing(2);
+@@ -486,7 +486,7 @@ class WRx3Shortcut : public QFrame {
+         m_rows.push_back(row);apply(key,ControlObject::get(ConfigKey("[RX3Settings]",key)));
+     }
+     void section(QVBoxLayout* layout,const QString& text) {
+-        auto* label=new QLabel(text,this);label->setFixedHeight(22);label->setProperty("section",true);label->setStyleSheet("border:0;border-bottom:1px solid #a9a9ad;font-size:15px;");layout->addWidget(label);
++        auto* label=new QLabel(text,this);label->setFixedHeight(22);label->setProperty("section",true);label->setStyleSheet("border:0;border-bottom:1px solid rgba(127,227,255,0.55);font-size:16px;");layout->addWidget(label);
+     }
+     void ensure(const QString& group,const QString& key,double initial) {
+         if(!ControlObject::exists(ConfigKey(group,key))) m_owners.push_back(
+diff --git a/src/widget/wrx3toolmenu.h b/src/widget/wrx3toolmenu.h
+index 4f07651..2c2db37 100644
+--- a/src/widget/wrx3toolmenu.h
++++ b/src/widget/wrx3toolmenu.h
+@@ -23,12 +23,12 @@ class WRx3ToolMenu : public QWidget {
+     };
+     explicit WRx3ToolMenu(QWidget* parent) : QWidget(parent) {
+         setObjectName("RX3BrowserTools");
+-        setStyleSheet("#RX3BrowserTools {background:#202020;color:white;} #RX3BrowserTools QLabel {color:white;font-family:Arial;font-size:16px;} #RX3BrowserTools QListWidget {background:#202020;color:white;border:0;font-family:Arial;font-size:16px;} #RX3BrowserTools QPushButton {background:#202020;color:white;border:1px solid white;min-height:36px;} #RX3ToolsBack[encoderFocus=\"true\"] {background:#007CE0;color:white;}");
++        setStyleSheet("#RX3BrowserTools {background:qlineargradient(x1:0,y1:0,x2:0,y2:1,stop:0 #1d2638,stop:0.5 #0b0e17,stop:1 #10161f);color:white;} #RX3BrowserTools QLabel {color:white;background:transparent;font-family:Arial;font-size:18px;} #RX3BrowserTools QListWidget {background:#000;color:white;border:1px solid rgba(127,227,255,0.55);border-radius:8px;font-family:Arial;font-size:19px;} #RX3BrowserTools QPushButton {background:qlineargradient(x1:0,y1:0,x2:0,y2:1,stop:0 #3a4560,stop:0.46 #1b2233,stop:0.5 #0d1220,stop:1 #18223a);color:white;border:1px solid rgba(127,227,255,0.55);border-radius:10px;font-size:18px;min-height:36px;} #RX3ToolsBack[encoderFocus=\"true\"] {background:qlineargradient(x1:0,y1:0,x2:0,y2:1,stop:0 #7fd8ff,stop:0.48 #2a9be6,stop:0.52 #1572c0,stop:1 #2b9fe8);color:white;}");
+         auto* layout=new QVBoxLayout(this);
+         m_title=new QLabel(this);layout->addWidget(m_title);
+         m_list=new QListWidget(this);m_list->setObjectName("RX3ToolsActions");
+         m_list->setAlternatingRowColors(true);
+-        m_list->setStyleSheet("QListWidget {background:#000;alternate-background-color:#262626;} QListWidget::item {min-height:40px;border:0;} QListWidget::item:selected {background:#007CE0;color:white;}");
++        m_list->setStyleSheet("QListWidget {background:#000;alternate-background-color:#111725;} QListWidget::item {min-height:44px;border:0;} QListWidget::item:selected {background:qlineargradient(x1:0,y1:0,x2:0,y2:1,stop:0 #7fd8ff,stop:0.48 #2a9be6,stop:0.52 #1572c0,stop:1 #2b9fe8);color:white;}");
+         layout->addWidget(m_list,1);
+         m_status=new QLabel(this);m_status->setObjectName("RX3ToolsStatus");m_status->setWordWrap(true);layout->addWidget(m_status);
+         m_backButton=new QPushButton("BACK",this);m_backButton->setObjectName("RX3ToolsBack");layout->addWidget(m_backButton);
+diff --git a/src/widget/wrx3trackinfo.h b/src/widget/wrx3trackinfo.h
+index 5298718..11421ee 100644
+--- a/src/widget/wrx3trackinfo.h
++++ b/src/widget/wrx3trackinfo.h
+@@ -57,12 +57,12 @@ class Rx3TrackInfoPanel : public QFrame {
+             :QFrame(parent),m_feature(feature) {
+         setObjectName("RX3DetailedInfo");setAttribute(Qt::WA_StyledBackground);
+         setStyleSheet("#RX3DetailedInfo {background:#000;color:white;border:0;} "
+-            "#RX3DetailedInfo QListWidget {background:#202020;color:white;border:0;font-family:Arial;font-size:19px;} "
+-            "#RX3DetailedInfo QListWidget::item {padding:3px 12px;border-bottom:1px solid #303030;} "
+-            "#RX3DetailedInfo QListWidget::item:selected {background:#007CE0;} "
+-            "#RX3DetailedInfo QLabel {color:white;background:transparent;font-family:Arial;font-size:18px;} "
+-            "#RX3DetailedInfo QPushButton {background:#202020;color:white;border:1px solid #777;font-family:Arial;font-size:18px;} "
+-            "#RX3DetailedInfo QPushButton[chosen=\"true\"] {background:#007CE0;}");
++            "#RX3DetailedInfo QListWidget {background:qlineargradient(x1:0,y1:0,x2:0,y2:1,stop:0 #1d2638,stop:0.5 #0b0e17,stop:1 #10161f);color:white;border:1px solid rgba(127,227,255,0.55);border-radius:10px;font-family:Arial;font-size:21px;} "
++            "#RX3DetailedInfo QListWidget::item {padding:3px 12px;border-bottom:1px solid #1f2a40;} "
++            "#RX3DetailedInfo QListWidget::item:selected {background:qlineargradient(x1:0,y1:0,x2:0,y2:1,stop:0 #7fd8ff,stop:0.48 #2a9be6,stop:0.52 #1572c0,stop:1 #2b9fe8);} "
++            "#RX3DetailedInfo QLabel {color:white;background:transparent;font-family:Arial;font-size:20px;} "
++            "#RX3DetailedInfo QPushButton {background:qlineargradient(x1:0,y1:0,x2:0,y2:1,stop:0 #3a4560,stop:0.46 #1b2233,stop:0.5 #0d1220,stop:1 #18223a);color:white;border:1px solid rgba(127,227,255,0.55);border-radius:10px;font-family:Arial;font-size:20px;} "
++            "#RX3DetailedInfo QPushButton[chosen=\"true\"] {background:qlineargradient(x1:0,y1:0,x2:0,y2:1,stop:0 #7fd8ff,stop:0.48 #2a9be6,stop:0.52 #1572c0,stop:1 #2b9fe8);}");
+         auto* layout=new QHBoxLayout(this);layout->setContentsMargins(8,0,8,0);layout->setSpacing(16);
+         m_fields=new QListWidget(this);m_fields->setObjectName("RX3InfoFields");
+         m_fields->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);layout->addWidget(m_fields,6);
+diff --git a/src/widget/wrx3utility.h b/src/widget/wrx3utility.h
+index d5802b2..e4ae0d6 100644
+--- a/src/widget/wrx3utility.h
++++ b/src/widget/wrx3utility.h
+@@ -22,7 +22,7 @@ class Rx3UtilityTable : public QTableWidget {
+   protected:
+     void paintEvent(QPaintEvent* event) override {
+         QTableWidget::paintEvent(event);
+-        QPainter painter(viewport());painter.setPen(QColor("#777777"));
++        QPainter painter(viewport());painter.setPen(QColor("#3a4a66"));
+         const int divider=columnViewportPosition(1)-1;
+         painter.drawLine(divider,0,divider,viewport()->height());
+     }
+@@ -41,15 +41,15 @@ class WRx3Utility : public QWidget {
+     };
+     explicit WRx3Utility(QWidget* parent) : QWidget(parent) {
+         setObjectName("RX3Utility");
+-        setStyleSheet("#RX3Utility {background:#202020;color:white;} "
+-                "#RX3Utility QTableWidget {background:#000;alternate-background-color:#262626;color:white;border:0;font:16px Arial;} "
++        setStyleSheet("#RX3Utility {background:qlineargradient(x1:0,y1:0,x2:0,y2:1,stop:0 #1d2638,stop:0.5 #0b0e17,stop:1 #10161f);color:white;} "
++                "#RX3Utility QTableWidget {background:#000;alternate-background-color:#111725;color:white;border:0;font:18px Arial;} "
+                 "#RX3Utility QTableWidget::item {padding:8px;border:0;} "
+-                "#RX3Utility QTableWidget::item:selected {background:#007CE0;color:white;} "
+-                "#RX3Utility QComboBox {background:#007CE0;color:white;border:1px solid white;padding:6px;font:16px Arial;} "
+-                "#RX3Utility QComboBox QAbstractItemView {background:#202020;color:white;selection-background-color:#007CE0;} "
+-                "#RX3Utility QLabel {color:white;font:14px Arial;} "
+-                "#RX3Utility QPushButton {background:#202020;color:white;border:1px solid #aaa;min-height:36px;} "
+-                "#RX3UtilityBack[encoderFocus=\"true\"] {background:#007CE0;}");
++                "#RX3Utility QTableWidget::item:selected {background:qlineargradient(x1:0,y1:0,x2:0,y2:1,stop:0 #7fd8ff,stop:0.48 #2a9be6,stop:0.52 #1572c0,stop:1 #2b9fe8);color:white;} "
++                "#RX3Utility QComboBox {background:qlineargradient(x1:0,y1:0,x2:0,y2:1,stop:0 #7fd8ff,stop:0.48 #2a9be6,stop:0.52 #1572c0,stop:1 #2b9fe8);color:white;border:1px solid white;border-radius:8px;padding:6px;font:18px Arial;} "
++                "#RX3Utility QComboBox QAbstractItemView {background:#0b0e17;color:white;selection-background-color:#1f8ad8;} "
++                "#RX3Utility QLabel {color:white;background:transparent;font:16px Arial;} "
++                "#RX3Utility QPushButton {background:qlineargradient(x1:0,y1:0,x2:0,y2:1,stop:0 #3a4560,stop:0.46 #1b2233,stop:0.5 #0d1220,stop:1 #18223a);color:white;border:1px solid rgba(127,227,255,0.55);border-radius:10px;font:18px Arial;min-height:36px;} "
++                "#RX3UtilityBack[encoderFocus=\"true\"] {background:qlineargradient(x1:0,y1:0,x2:0,y2:1,stop:0 #7fd8ff,stop:0.48 #2a9be6,stop:0.52 #1572c0,stop:1 #2b9fe8);}");
+         auto* layout = new QVBoxLayout(this);
+         layout->setContentsMargins(0,0,0,8);
+         m_table = new Rx3UtilityTable(this);
+@@ -89,7 +89,7 @@ class WRx3Utility : public QWidget {
+                 category=setting.category;const int row=m_table->rowCount();
+                 m_table->insertRow(row);
+                 auto* header=new QTableWidgetItem(category);
+-                header->setFlags(Qt::ItemIsEnabled);header->setBackground(QColor("#303030"));
++                header->setFlags(Qt::ItemIsEnabled);header->setBackground(QColor("#222b40"));
+                 auto font=header->font();font.setBold(true);header->setFont(font);
+                 m_table->setItem(row,0,header);m_table->setSpan(row,0,1,2);
+                 m_table->setRowHeight(row,34);
+diff --git a/src/widget/wtracktableview.cpp b/src/widget/wtracktableview.cpp
+index ed664b3..2e8f185 100644
+--- a/src/widget/wtracktableview.cpp
++++ b/src/widget/wtracktableview.cpp
+@@ -3,6 +3,7 @@
+ #include "widget/wtracktableview.h"
+ #include "widget/rx3browsericons.h"
+ #include "widget/rx3browsernavigation.h"
++#include "widget/rx3aero.h"
+ #include "widget/rx3browserplayback.h"
+ 
+ #include <QDrag>
+@@ -82,10 +83,10 @@ class Rx3TrackHeader : public WTrackTableViewHeader {
+         else if (field == "title") label = "TRACK";
+         if(parent()->property("rx3SearchTracks").toBool()) label=field=="title" ? "ALL" : "";
+         painter->save();
+-        painter->fillRect(rect, QColor("#303030"));
+-        painter->setPen(QColor("#101010")); painter->drawLine(rect.topRight(), rect.bottomRight());
++        rx3::aero::fillHeader(painter, rect);
++        painter->setPen(QColor("#0b0f18")); painter->drawLine(rect.topRight(), rect.bottomRight());
+         QFont font("Arial"); font.setPixelSize(qMax(10, rect.height() / 3)); painter->setFont(font);
+-        painter->setPen(QColor("#b7b7b7"));
++        painter->setPen(QColor("#d6f2ff"));
+         painter->drawText(rect.adjusted(9, 0, -4, 0), Qt::AlignLeft | Qt::AlignVCenter, label);
+         painter->restore();
+     }
+@@ -98,7 +99,8 @@ class Rx3TrackDelegate : public QStyledItemDelegate {
+     void paint(QPainter* p, const QStyleOptionViewItem& option, const QModelIndex& index) const override {
+         p->save();
+         const bool selected = option.state & QStyle::State_Selected;
+-        p->fillRect(option.rect, selected ? QColor("#007CE0") : QColor(index.row() % 2 ? "#262626" : "#000000"));
++        if (selected) rx3::aero::fillSelection(p, option.rect);
++        else p->fillRect(option.rect, rx3::aero::rowColor(index.row()));
+         const QString field = m_view->columnNameOfIndex(index);
+         const auto* trackModel = dynamic_cast<TrackModel*>(m_view->model());
+         const QUrl identity = trackModel ? trackModel->getTrackUrl(index) : QUrl();
+@@ -1583,7 +1585,7 @@ void WTrackTableView::applyRx3Columns() {
+     // Reserve one header plus exactly twelve complete rows. Put rounding
+     // pixels in the header so a thirteenth row never peeks into the viewport.
+     const int available=qMax(13,height()-2*frameWidth());
+-    const auto geometry=rx3::twelveBrowserRows(available);
++    const auto geometry=rx3::visibleBrowserRows(available);
+     const int row = geometry.rowHeight;
+     verticalHeader()->setMinimumSectionSize(row);
+     verticalHeader()->setDefaultSectionSize(row);

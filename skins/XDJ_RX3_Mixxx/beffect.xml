@@ -4,7 +4,7 @@
     <Layout>vertical</Layout>
     <Size>0me,0me</Size>
     <Children>
-      <WidgetGroup><ObjectName>RX3FxBezel</ObjectName><Layout>vertical</Layout><Size>0me,314f</Size><Children>
+      <WidgetGroup><ObjectName>RX3FxBezel</ObjectName><Layout>vertical</Layout><Size>0me,314me</Size><Children>
       <Label><ObjectName>RX3BeatFxTitle</ObjectName><Text>BEAT FX</Text></Label>
       <WidgetGroup><ObjectName>RX3FxContent</ObjectName><Layout>vertical</Layout><Children>
       <WidgetGroup><ObjectName>RX3FxSelectorGap</ObjectName><Size>0me,12f</Size></WidgetGroup>
@@ -20,7 +20,7 @@
       </PushButton>
       <WidgetGroup><ObjectName>RX3FxReadoutGap</ObjectName><Size>0me,12f</Size></WidgetGroup>
       <WidgetGroup>
-        <ObjectName>RX3BeatFxReadout</ObjectName><Layout>vertical</Layout><Size>0me,140f</Size>
+        <ObjectName>RX3BeatFxReadout</ObjectName><Layout>vertical</Layout><Size>0me,140me</Size>
         <Children>
           <WidgetGroup><ObjectName>RX3BeatFxBpmRow</ObjectName><Layout>horizontal</Layout><Size>0me,48f</Size><Children>
             <Number><ObjectName>RX3BeatFxBpm</ObjectName><NumberOfDigits>1</NumberOfDigits><Connection><ConfigKey>[RX3BeatFx],bpm</ConfigKey></Connection></Number>
@@ -33,7 +33,7 @@
       </WidgetGroup>
       </Children></WidgetGroup>
       </Children></WidgetGroup>
-      <WidgetGroup><ObjectName>RX3FxSpacer</ObjectName><Size>0me,0me</Size></WidgetGroup>
+      <WidgetGroup><ObjectName>RX3FxSpacer</ObjectName><Size>0me,8f</Size></WidgetGroup>
       <WidgetGroup>
         <ObjectName>RX3ZoomControls</ObjectName><Layout>horizontal</Layout><Size>0me,36f</Size>
         <Children>

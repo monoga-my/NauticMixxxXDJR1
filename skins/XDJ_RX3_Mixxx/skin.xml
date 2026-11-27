@@ -21,6 +21,9 @@
 			<attribute config_key="[RX3SidePanel],current">0</attribute>
 			<attribute config_key="[App],num_samplers">16</attribute>
 			<attribute persist="true" config_key="[Skin],show_maximized_library">0</attribute>
+			<!-- PERFORMANCE view: 0 FULL, 1 WAVE+ (no FX strip), 2 MAX (no FX strip
+			     and no deck title rails). Cycled by the VIEW button in the top bar. -->
+			<attribute persist="true" config_key="[Skin],rx3_view">0</attribute>
 			<attribute persist="true" config_key="[Master],skin_settings">0</attribute>
 			<attribute persist="true" config_key="[Skin],show_microphones">0</attribute>
 			<attribute persist="true" config_key="[VinylControl],show_vinylcontrol">0</attribute>
@@ -106,7 +109,7 @@
 					<Layout>vertical</Layout>
 					<SizePolicy>me,me</SizePolicy>
 					<Children>
-						<WidgetGroup><ObjectName>RX3TopbarWrapper</ObjectName><Size>0me,48f</Size><Layout>vertical</Layout><Children>
+						<WidgetGroup><ObjectName>RX3TopbarWrapper</ObjectName><Size>0me,40f</Size><Layout>vertical</Layout><Children>
                         <SingletonContainer><ObjectName>Topbar_Singleton</ObjectName></SingletonContainer>
                         </Children><Connection><ConfigKey>[Tab],library</ConfigKey><BindProperty>visible</BindProperty><Transform><Not/></Transform></Connection></WidgetGroup>
 						<WidgetStack currentpage="[Tab],current">

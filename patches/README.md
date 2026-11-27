@@ -1,5 +1,16 @@
 # NauticMixxx native patches
 
+## 0048 — Aero BROWSE and utility pages, ten-row browser
+
+Ten track rows per BROWSE page instead of twelve (`rx3::kBrowserVisibleRows`,
+`rx3::visibleBrowserRows`), so rows and their text are about a fifth larger on
+small screens. The playlist preview follows the same count. Track rows,
+headers and selections are painted in the Aero palette (`widget/rx3aero.h`):
+smoked alternating rows, glossy column headers and an icy-blue gel selection.
+The INFO, tools/MENU, SOURCE settings, detailed track info, UTILITY and
+SHORTCUT pages get glass panels, rounded gel buttons, the gel selection and
+fonts about 2 px larger. Tests follow the new row count and colours.
+
 ## 0047 — Aero waveforms, X-PAD orbs and REMAIN glass tube
 
 Recolours the three-band rekordbox waveforms for the Dark Frutiger Aero skin

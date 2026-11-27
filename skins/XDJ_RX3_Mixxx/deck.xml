@@ -10,6 +10,7 @@
         <ObjectName>DeckHeader</ObjectName>
         <Layout>horizontal</Layout>
         <Size>0me,52f</Size>
+        <Connection><ConfigKey>[Skin],rx3_view</ConfigKey><Transform><IsEqual>2</IsEqual><Not/></Transform><BindProperty>visible</BindProperty></Connection>
         <Children>
           <Label><Rx3DeckBadge>true</Rx3DeckBadge>
             <ObjectName>DeckNumBadge<Variable name="channel"/></ObjectName>

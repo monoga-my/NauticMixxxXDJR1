@@ -39,6 +39,11 @@ foreach ($chain in 'RX3 REVERB.xml', 'RX3 PING PONG.xml', 'RX3 NOISE.xml', 'RX3 
 $skin = Join-Path $ProfileDir 'skins\XDJ_RX3_Mixxx'
 if (Test-Path -LiteralPath $skin) {
     Copy-Item -LiteralPath (Join-Path $projectRoot 'skins\XDJ_RX3_Mixxx\style.qss') -Destination $skin -Force
+    # Aero backdrop and REMAIN tube images used by style.qss.
+    $images = Join-Path $skin 'images'
+    New-Item -ItemType Directory -Path $images -Force | Out-Null
+    Get-ChildItem (Join-Path $projectRoot 'skins\XDJ_RX3_Mixxx\images') -Filter '*.svg' |
+        Copy-Item -Destination $images -Force
 }
 
 $effects = Join-Path $ProfileDir 'effects.xml'

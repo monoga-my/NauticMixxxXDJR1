@@ -84,12 +84,15 @@
         <Layout>vertical</Layout>
         <Size>0me,90f</Size>
         <Children><Template src="skin:rx3_mode_strip.xml"/></Children>
+        <Connection><ConfigKey>[Skin],rx3_view</ConfigKey><Transform><IsEqual>0</IsEqual></Transform><BindProperty>visible</BindProperty></Connection>
       </WidgetGroup>
 
       <WidgetGroup>
         <ObjectName>Decks</ObjectName>
         <Layout>horizontal</Layout>
         <Size>0me,216f</Size>
+        <!-- highlight 2 (MAX) shrinks the row by the hidden title rail; see style.qss. -->
+        <Connection><ConfigKey>[Skin],rx3_view</ConfigKey><BindProperty>highlight</BindProperty></Connection>
         <Children>
           <Template src="skin:deck.xml">
             <SetVariable name="channel">1</SetVariable>

@@ -62,6 +62,17 @@
       </WidgetGroup>
 
       <WidgetGroup><ObjectName>RX3TopbarGap</ObjectName><Size>0me,0me</Size></WidgetGroup>
+      <!-- VIEW cycles FULL -> WAVE+ -> MAX: more room for the waveforms. -->
+      <PushButton>
+        <ObjectName>RX3ViewButton</ObjectName>
+        <Size>118f,28f</Size>
+        <NumberStates>3</NumberStates>
+        <State><Number>0</Number><Text>VIEW: FULL</Text></State>
+        <State><Number>1</Number><Text>VIEW: WAVE+</Text></State>
+        <State><Number>2</Number><Text>VIEW: MAX</Text></State>
+        <Connection><ConfigKey>[Skin],rx3_view</ConfigKey><ButtonState>LeftButton</ButtonState></Connection>
+        <Connection><ConfigKey>[Tab],library</ConfigKey><BindProperty>visible</BindProperty><Transform><Not/></Transform></Connection>
+      </PushButton>
       <WidgetGroup>
         <ObjectName>RX3TopbarStatus</ObjectName>
         <Layout>horizontal</Layout>

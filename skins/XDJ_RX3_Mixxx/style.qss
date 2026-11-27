@@ -3562,3 +3562,211 @@ QPushButton[rx3Bank="true"]:disabled { color: #6b7385; }
 #RX3LibraryMaster[highlight="1"] { color: #2b0420; background: #ff7fcd; }
 #RX3BrowserHeader QPushButton[active="true"] { border-top: 2px solid #6fd6ff; }
 #RX3PlaylistPreviewHeader { border-bottom: 1px solid #6fd6ff; }
+
+/* ======================================================================
+   Aero round 2 (v2.2): larger type for 7" screens, less dead space, the
+   VIEW button, and the same glass styling on BROWSE, SOURCE, the search
+   keyboard and the sampler page. Pages drawn in C++ (INFO, tools, UTILITY,
+   SHORTCUT, the track rows) are styled by patch 0048.
+   ====================================================================== */
+
+/* ---- VIEW: FULL / WAVE+ / MAX ---- */
+#RX3ViewButton {
+  background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+      stop:0 #34405a, stop:0.46 #182030, stop:0.5 #0b0f1a, stop:1 #141b2c);
+  color: #8fe9ff;
+  border: 1px solid rgba(127, 227, 255, 0.55);
+  border-radius: 14px;
+  font-size: 14px;
+  font-weight: bold;
+  padding: 0 6px;
+  margin: 0 8px 0 0;
+}
+#RX3ViewButton[displayValue="1"], #RX3ViewButton[displayValue="2"] {
+  background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+      stop:0 #ffe3f3, stop:0.45 #ff9ad5, stop:0.5 #ff6ec7, stop:1 #ff9ad5);
+  color: #2b0420;
+  border: 1px solid #ffffff;
+}
+/* MAX hides the 52 px title rails, so the deck row gives that height to the
+   waveforms. */
+#Decks { min-height: 216px; max-height: 216px; qproperty-layoutSpacing: 10; }
+#Decks[highlight="2"] { min-height: 164px; max-height: 164px; }
+
+/* ---- top bar ---- */
+#RX3Clock { font-size: 15px; }
+
+/* ---- deck info rail: rows fill the panel, larger type ---- */
+#WaveformInfoDeckTitle { font-size: 15px; padding-left: 14px; }
+#WaveformInfo_Header, #WaveformInfo_Key_Container, #WaveformInfo_Jump_Container,
+#WaveformInfo_Bars_Container { padding: 0 12px; }
+#WaveformInfoSource { font-size: 24px; }
+#WaveformInfoCaption { font-size: 14px; min-width: 24px; max-width: 24px; }
+#WaveformInfo_Key { font-size: 28px; }
+#WaveformInfo_Bars, #WaveformInfoJump { font-size: 26px; }
+
+/* ---- BEAT FX panel ---- */
+#RX3BeatFxTitle { font-size: 17px; }
+#RX3BeatFxCaption { font-size: 14px; }
+#RX3BeatFxBpm { font-size: 36px; }
+#RX3BeatFxBpmUnit { font-size: 12px; min-width: 30px; max-width: 30px; }
+#RX3BeatFxMilliseconds { font-size: 24px; padding: 0 10px 0 0; }
+#RX3BeatFxBeat { font-size: 23px; padding: 0 10px 0 0; }
+#RX3BeatFxReadout { qproperty-layoutAlignment: 'AlignVCenter'; }
+#RX3BeatFxQuantize { font-size: 14px; }
+#RX3FxSpacer { min-height: 8px; max-height: 8px; }
+#RX3ZoomControls WPushButton { font-size: 15px; }
+#RX3StripCaption, #RX3XPadLabel { font-size: 14px; }
+
+/* ---- deck cards ---- */
+#DeckTitle { font-size: 27px; }
+#DeckTitleNote { font-size: 26px; }
+#TrackNoCaption { font-size: 14px; min-height: 18px; max-height: 18px; }
+#TrackNoValue { font-size: 29px; }
+#TrackNoPlayMode { font-size: 13px; min-height: 19px; max-height: 19px; }
+#TrackNoQuantize { font-size: 13px; min-height: 20px; max-height: 20px; }
+#TrackNoQuantizeValue { font-size: 29px; }
+#DeckCueLabel, #DeckAutoCueLabel { font-size: 13px; min-height: 20px; max-height: 20px; }
+#TimeLabelRemain, #TimeLabelTime, #TimeLabelSlash { font-size: 13px; }
+#DeckTempoCaption { font-size: 12px; min-width: 42px; }
+#DeckHeaderBpmTitleRow { min-height: 16px; max-height: 16px; }
+#DeckHeaderBpmTitle { font-size: 12px; min-width: 30px; max-width: 30px; }
+#BpmMaster { font-size: 10px; }
+
+/* ---- BROWSE ---- */
+#RX3BrowserHeader {
+  background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+      stop:0 #34405a, stop:0.46 #182030, stop:0.5 #0b0f1a, stop:1 #141b2c);
+  border-bottom: 1px solid rgba(127, 227, 255, 0.45);
+}
+#RX3BrowserHeader QLabel { font-size: 23px; }
+#RX3BrowserHeader QPushButton {
+  background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+      stop:0 #3a4560, stop:0.46 #1b2233, stop:0.5 #0d1220, stop:1 #18223a);
+  color: #e9f8ff;
+  border: 1px solid rgba(127, 227, 255, 0.30);
+  border-radius: 9px;
+  font-size: 16px;
+}
+#RX3BrowserHeader QPushButton[active="true"] { border: 1px solid #6fd6ff; border-top: 2px solid #6fd6ff; color: #ffffff; }
+#RX3BrowserHeader QPushButton[encoderFocus="true"] { border: 1px solid #ff9ad5; color: #ffffff; }
+#RX3BrowserHeader QPushButton:disabled { color: #6b7385; }
+#RX3BrowserHeader QPushButton#RX3BrowserBreadcrumb { font-size: 20px; background: transparent; border: 0; }
+#RX3BrowserHeader QLineEdit {
+  background: #05070d;
+  border: 1px solid #6fd6ff;
+  border-radius: 9px;
+  font-size: 20px;
+}
+#RX3BrowserCategories { font-size: 14px; }
+#RX3BrowserCategories::item {
+  background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+      stop:0 #2e3850, stop:0.5 #131a29, stop:1 #1a2236);
+  border-bottom: 1px solid #05070d;
+}
+#RX3BrowserCategories::item:selected {
+  background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+      stop:0 #7fd8ff, stop:0.48 #2a9be6, stop:0.52 #1572c0, stop:1 #2b9fe8);
+  border-left: 4px solid #ffffff;
+}
+#RX3BrowserFolders, #RX3BrowserFacets { font-size: 22px; alternate-background-color: #111725; }
+#RX3BrowserFacets::item:selected,
+#RX3BrowserSources::item:selected {
+  background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+      stop:0 #7fd8ff, stop:0.48 #2a9be6, stop:0.52 #1572c0, stop:1 #2b9fe8);
+}
+#RX3PlaylistPreviewHeader, #RX3BrowseColumnHeader {
+  background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+      stop:0 #56627e, stop:0.46 #2a3348, stop:0.5 #171d2c, stop:1 #1f2739);
+  color: #d6f2ff;
+}
+#RX3PlaylistPreviewHeader { font-size: 22px; border-bottom: 1px solid #6fd6ff; }
+#RX3BrowseColumnHeader { font-size: 17px; }
+#RX3PlaylistPreviewTracks { font-size: 21px; alternate-background-color: #111725; }
+#RX3PlaylistPreviewTracks QHeaderView::section {
+  background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+      stop:0 #56627e, stop:0.46 #2a3348, stop:0.5 #171d2c, stop:1 #1f2739);
+  color: #d6f2ff;
+  font-size: 17px;
+}
+#RX3PlaylistPreviewMessage { color: #b9dff0; font-size: 20px; }
+#RX3BrowserTracks QTableView, #RX3PlaylistPreviewTracks {
+  alternate-background-color: #111725;
+  selection-background-color: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+      stop:0 #7fd8ff, stop:0.48 #2a9be6, stop:0.52 #1572c0, stop:1 #2b9fe8);
+}
+#RX3BrowserSources { background: #0b0f19; font-size: 27px; }
+#RX3BrowserSources QHeaderView::section {
+  background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+      stop:0 #56627e, stop:0.46 #2a3348, stop:0.5 #171d2c, stop:1 #1f2739);
+  color: #d6f2ff;
+  font-size: 17px;
+}
+#RX3SourceInfo, #RX3SourceInfoPanel, #RX3TrackInfo {
+  background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+      stop:0 #1d2638, stop:0.5 #0b0e17, stop:1 #10161f);
+}
+#RX3SourceInfo { font-size: 20px; }
+#RX3TrackInfo { font-size: 19px; }
+#RX3SourceSettings {
+  background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+      stop:0 #3a4560, stop:0.46 #1b2233, stop:0.5 #0d1220, stop:1 #18223a);
+  border: 1px solid rgba(127, 227, 255, 0.55);
+  border-radius: 10px;
+  font-size: 21px;
+}
+#RX3SourceSettings:pressed, #RX3SourceSettings[encoderFocus="true"] {
+  background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+      stop:0 #7fd8ff, stop:0.48 #2a9be6, stop:0.52 #1572c0, stop:1 #2b9fe8);
+  border: 1px solid #ffffff;
+}
+#RX3NativeBrowser QScrollBar::handle:vertical { background: #6fd6ff; border-radius: 2px; }
+
+/* Touch search keyboard. */
+#RX3SearchKeyboard {
+  background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+      stop:0 #1d2638, stop:0.5 #0b0e17, stop:1 #10161f);
+}
+#RX3SearchKeyboard QPushButton {
+  background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+      stop:0 #46526e, stop:0.46 #1f2638, stop:0.5 #0d1220, stop:1 #1a2440);
+  border: 1px solid rgba(127, 227, 255, 0.45);
+  border-radius: 9px;
+  font-size: 26px;
+}
+#RX3SearchKeyboard QPushButton:pressed {
+  background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+      stop:0 #ffe3f3, stop:0.45 #ff9ad5, stop:0.5 #ff6ec7, stop:1 #ff9ad5);
+  color: #2b0420;
+}
+
+/* Decks under the browser. */
+#RX3LibraryDecks { background: transparent; border-top: 2px solid #6fd6ff; qproperty-layoutSpacing: 10; }
+#RX3LibraryDeckNumber { font-size: 14px; }
+#RX3LibraryDeckTimeCaption { font-size: 13px; background: transparent; }
+#RX3LibraryDeckBpmCaption { font-size: 11px; background: transparent; }
+#RX3LibraryDeckTime { background: transparent; }
+#RX3LibraryDeckBpmBox1, #RX3LibraryDeckBpmBox2 {
+  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #10172a, stop:0.5 #000000, stop:1 #05070d);
+  border: 1px solid rgba(233, 248, 255, 0.85);
+}
+#RX3LibraryDeckBpm1, #RX3LibraryDeckBpm2, #RX3LibraryBpmHeader { background: transparent; }
+
+/* Sampler page and menus. */
+#SamplersDeck1, #SamplersDeck2 {
+  background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+      stop:0 #1d2638, stop:0.5 #0b0e17, stop:1 #10161f);
+  border: 1px solid rgba(127, 227, 255, 0.35);
+  border-radius: 12px;
+}
+QMenu {
+  background: #0b0e17;
+  color: #e9f8ff;
+  border: 1px solid rgba(127, 227, 255, 0.55);
+  font-size: 16px;
+}
+QMenu::item:selected {
+  background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+      stop:0 #7fd8ff, stop:0.48 #2a9be6, stop:0.52 #1572c0, stop:1 #2b9fe8);
+  color: #ffffff;
+}

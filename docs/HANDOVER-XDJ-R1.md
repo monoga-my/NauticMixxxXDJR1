@@ -140,6 +140,18 @@ indexes the user-ordered visible-effects list, so it was not used.
 
 The patch-count checks were bumped 45 → 46.
 
+## Round 5: larger type, VIEW button, Aero everywhere
+
+Previews (Qt mock with the real `style.qss`): [FULL](aero-preview.png),
+[MAX](aero-preview-max.png), [BROWSE](aero-preview-browse.png).
+
+| Change | Where |
+| --- | --- |
+| Larger text on PERFORMANCE; info-rail rows and the BEAT FX panel fill their space; top bar 8 px shorter; deck gap 18 → 10 px | `style.qss` ("Aero round 2"), `waveform_info.xml`, `beffect.xml`, `skin.xml` |
+| VIEW button in the top bar cycles FULL → WAVE+ (no FX strip, +90 px of waveform) → MAX (also no deck title rails, +142 px) | `[Skin],rx3_view` (persistent) in `skin.xml`, `topbar.xml`, `overview.xml`, `deck.xml`, `#Decks[highlight="2"]` |
+| BROWSE header, category rail, lists, source page, search keyboard, browse decks, sampler page, menus | `style.qss` |
+| Ten browse rows (was twelve), Aero track rows, INFO/tools/UTILITY/SHORTCUT pages | Patch 0048 (needs a new build) |
+
 ## Round 4: Dark Frutiger Aero skin
 
 The skin keeps its layout and sizes; only colour, gloss and corner radius
