@@ -14,6 +14,10 @@
 - BROWSE category rail: 128 px wide, each category on a tinted glossy glass
   orb, bold one-line labels sized to the row (only two-word names such as
   DATE ADDED wrap). Tests cover the labels and Camelot numbering.
+- BROWSE KEY column: a green gel behind keys equal to the master deck's key,
+  yellow for related keys (relative major/minor and one step either way on the
+  Camelot wheel, `rx3::keyMatch`). Repaints when the master deck or its key
+  changes.
 
 ## 0048 — Aero BROWSE and utility pages, ten-row browser
 

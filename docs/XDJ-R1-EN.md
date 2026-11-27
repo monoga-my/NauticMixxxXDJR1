@@ -85,6 +85,10 @@ while the XDJ-R1 mapping runs. Each shows which effects are on (pink), which
 one is edited (cyan outline), every effect's level, the edited effect's beat
 and MID+HI when the lows are kept dry.
 
+In the track list, a key in the same key as the master deck has a **green**
+background; a related key (same number with the other letter, or one number
+either side) is **yellow**.
+
 The track list shows a **KEY** column. Its text is larger than in 2.0.0 and no
 longer uses the condensed Arial Narrow font.
 

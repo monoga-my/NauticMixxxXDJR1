@@ -177,10 +177,10 @@ index c547764..b382a6e 100644
      QString getCustomKeyNotation(mixxx::track::io::key::ChromaticKey key) {
          return m_pConfig->getValue<QString>(ConfigKey(KEY_CONFIG_KEY,
 diff --git a/src/test/rx3display_test.cpp b/src/test/rx3display_test.cpp
-index 0199f6d..dacf4a9 100644
+index 0199f6d..200b73b 100644
 --- a/src/test/rx3display_test.cpp
 +++ b/src/test/rx3display_test.cpp
-@@ -729,6 +729,21 @@ TEST(Rx3BrowserPlayback, PlayReplacesBothNoteAndHAtReferenceAndRetinaSizes) {
+@@ -729,6 +729,31 @@ TEST(Rx3BrowserPlayback, PlayReplacesBothNoteAndHAtReferenceAndRetinaSizes) {
          EXPECT_EQ(QColor("#01FF02"),play.pixelColor(14*dpr,16*dpr));
      }
  }
@@ -191,6 +191,16 @@ index 0199f6d..dacf4a9 100644
 +    EXPECT_EQ(QString("DATE\nADDED"),rx3::browserCategoryLines("DATE ADDED"));
 +    EXPECT_EQ(QString("ARTIST"),rx3::browserCategoryLines("ARTIST"));
 +    EXPECT_NE(rx3::browserCategoryTint("ARTIST"),rx3::browserCategoryTint("ALBUM"));
++}
++TEST(Rx3BrowserPlayback, KeyHighlightIsGreenForSameYellowForRelated) {
++    using namespace mixxx::track::io::key;
++    EXPECT_EQ(rx3::KeyMatch::Same,rx3::keyMatch(A_MINOR,A_MINOR));
++    EXPECT_EQ(rx3::KeyMatch::Related,rx3::keyMatch(A_MINOR,C_MAJOR));
++    EXPECT_EQ(rx3::KeyMatch::Related,rx3::keyMatch(A_MINOR,E_MINOR));
++    EXPECT_EQ(rx3::KeyMatch::Related,rx3::keyMatch(A_MINOR,D_MINOR));
++    EXPECT_EQ(rx3::KeyMatch::None,rx3::keyMatch(A_MINOR,F_SHARP_MAJOR));
++    EXPECT_EQ(rx3::KeyMatch::None,rx3::keyMatch(INVALID,A_MINOR));
++    EXPECT_EQ(rx3::KeyMatch::Same,rx3::keyMatch(A_MINOR,KeyUtils::guessKeyFromText("8A")));
 +}
 +TEST(Rx3BrowserPlayback, CamelotIsMixxxLancelotNumbering) {
 +    using KN=KeyUtils::KeyNotation;
@@ -247,10 +257,10 @@ index 2a2cc84..8490525 100644
 +}
  } // namespace rx3
 diff --git a/src/widget/rx3browsernavigation.h b/src/widget/rx3browsernavigation.h
-index 662a2ce..5c759eb 100644
+index 662a2ce..16497c1 100644
 --- a/src/widget/rx3browsernavigation.h
 +++ b/src/widget/rx3browsernavigation.h
-@@ -19,6 +19,11 @@ inline BrowserRows visibleBrowserRows(int availableHeight) {
+@@ -19,6 +19,22 @@ inline BrowserRows visibleBrowserRows(int availableHeight) {
      const int row=available/(kBrowserVisibleRows+1);
      return {row,available-kBrowserVisibleRows*row};
  }
@@ -258,6 +268,17 @@ index 662a2ce..5c759eb 100644
 +inline QString displayKey(const QString& raw) {
 +    const auto key=KeyUtils::guessKeyFromText(raw);
 +    return key==mixxx::track::io::key::INVALID ? raw : KeyUtils::keyToString(key);
++}
++// BROWSE key highlight against the master deck: the same key (green) or a
++// related key on the Camelot wheel (yellow: relative major/minor, one step
++// either way).
++enum class KeyMatch { None, Same, Related };
++inline KeyMatch keyMatch(mixxx::track::io::key::ChromaticKey reference,
++        mixxx::track::io::key::ChromaticKey key) {
++    using mixxx::track::io::key::INVALID;
++    if(reference==INVALID || key==INVALID) return KeyMatch::None;
++    if(key==reference) return KeyMatch::Same;
++    return KeyUtils::getCompatibleKeys(reference).contains(key) ? KeyMatch::Related : KeyMatch::None;
 +}
  inline int categoryRank(const QString& label) {
      const QStringList order={"ARTIST","ALBUM","TRACK","KEY","PLAYLIST","HISTORY","MATCHING","FOLDER","REC"};
@@ -360,3 +381,68 @@ index 11421ee..d3be0d8 100644
              track.rawMetadata.value("color_name").toString(),track.genre,track.rawMetadata.value("date_added").toString()};
          info.number=track.rawMetadata.value("track_number").toInt();
      } else if(loaded) {
+diff --git a/src/widget/wtracktableview.cpp b/src/widget/wtracktableview.cpp
+index 2e8f185..356ba23 100644
+--- a/src/widget/wtracktableview.cpp
++++ b/src/widget/wtracktableview.cpp
+@@ -36,6 +36,7 @@
+ #include "preferences/dialog/dlgprefdeck.h"
+ #include "preferences/dialog/dlgpreflibrary.h"
+ #include "sources/soundsourceproxy.h"
++#include "track/keyutils.h"
+ #include "track/track.h"
+ #include "track/trackref.h"
+ #include "util/assert.h"
+@@ -95,7 +96,22 @@ class Rx3TrackHeader : public WTrackTableViewHeader {
+ class Rx3TrackDelegate : public QStyledItemDelegate {
+   public:
+     Rx3TrackDelegate(WTrackTableView* view, AnalysisDao* dao, rx3::BrowserPlaybackState* playback)
+-            : QStyledItemDelegate(view), m_view(view), m_dao(dao), m_playback(playback), m_cache(256) {}
++            : QStyledItemDelegate(view), m_view(view), m_dao(dao), m_playback(playback), m_cache(256) {
++        // Repaint the KEY highlights when the master deck or its key changes.
++        for (const auto& key : {ConfigKey("[RX3Display]", "master1"), ConfigKey("[RX3Display]", "master2"),
++                     ConfigKey("[Channel1]", "key"), ConfigKey("[Channel2]", "key")}) {
++            auto* proxy = new ControlProxy(key, this, ControlFlag::NoAssertIfMissing);
++            proxy->connectValueChanged(this, [this](double) { m_view->viewport()->update(); });
++        }
++    }
++    // The master deck's current key, or INVALID when it has none.
++    static mixxx::track::io::key::ChromaticKey masterKey() {
++        const ConfigKey master2("[RX3Display]", "master2");
++        const int deck = ControlObject::exists(master2) && ControlObject::get(master2) > 0 ? 2 : 1;
++        const ConfigKey key(QString("[Channel%1]").arg(deck), "key");
++        if (!ControlObject::exists(key)) return mixxx::track::io::key::INVALID;
++        return KeyUtils::keyFromNumericValue(ControlObject::get(key));
++    }
+     void paint(QPainter* p, const QStyleOptionViewItem& option, const QModelIndex& index) const override {
+         p->save();
+         const bool selected = option.state & QStyle::State_Selected;
+@@ -231,6 +247,28 @@ class Rx3TrackDelegate : public QStyledItemDelegate {
+                 p->drawArc(QRectF(c.x()-9*unit,c.y()+6*unit,18*unit,12*unit),0,180*16);
+                 r.adjust(qRound(26*unit),0,0,0);
+             }
++            if (field == "key") {
++                // Green gel = same key as the master deck, yellow = related key.
++                const auto match = rx3::keyMatch(masterKey(), KeyUtils::guessKeyFromText(label));
++                if (match != rx3::KeyMatch::None) {
++                    const bool same = match == rx3::KeyMatch::Same;
++                    const QFontMetrics metrics(font);
++                    const qreal height = option.rect.height() * 0.66;
++                    const QRectF pill(r.x() - 4, r.center().y() - height / 2,
++                            qMin<qreal>(r.width() + 4, metrics.horizontalAdvance(label) + 14), height);
++                    QLinearGradient gel(pill.topLeft(), pill.bottomLeft());
++                    gel.setColorAt(0, QColor(same ? "#d9ffe4" : "#fff6c8"));
++                    gel.setColorAt(0.45, QColor(same ? "#5ef08c" : "#ffe066"));
++                    gel.setColorAt(0.5, QColor(same ? "#22c55e" : "#f5c400"));
++                    gel.setColorAt(1, QColor(same ? "#5ef08c" : "#ffe066"));
++                    p->setRenderHint(QPainter::Antialiasing);
++                    p->setPen(QPen(QColor(255, 255, 255, 200), 1));
++                    p->setBrush(gel);
++                    p->drawRoundedRect(pill, height / 2, height / 2);
++                    p->setPen(QColor(same ? "#06280f" : "#2b2100"));
++                    r.adjust(3, 0, 0, 0);
++                }
++            }
+             p->drawText(r, Qt::AlignLeft | Qt::AlignVCenter, QFontMetrics(font).elidedText(label, Qt::ElideRight, r.width()));
+         }
+         p->restore();
