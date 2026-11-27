@@ -148,6 +148,33 @@ for (const rateDir of [1, -1]) {
     assert.equal(entered, 2, "press and release go to the browser");
 }
 
+// SELECT turn: zooms both waveforms in PERFORMANCE, browses otherwise.
+{
+    const {mapping, browser, values} = load();
+    const zooms = [];
+    let turned = 0;
+    browser.turn = () => { turned++; };
+    const realSet = Object.getPrototypeOf(values).set;
+    values.set = function(key, value) {
+        if (/waveform_zoom_(up|down)$/.test(key) && value === 1) zooms.push(key);
+        return realSet.call(this, key, value);
+    };
+    mapping.selectTurn(0, 0x40, 0x01, 0xB0, "[Library]"); // right
+    assert.deepEqual(zooms, ["[Channel1],waveform_zoom_down", "[Channel2],waveform_zoom_down"],
+        "right zooms both decks in");
+    mapping.selectTurn(0, 0x40, 0x7F, 0xB1, "[Library]"); // left
+    assert.deepEqual(zooms.slice(2), ["[Channel1],waveform_zoom_up", "[Channel2],waveform_zoom_up"]);
+    assert.equal(turned, 0);
+    for (const [key, value] of [["[Tab],current", 1], ["[RX3Info],visible", 1],
+        ["[RX3Shortcut],visible", 1], ["[RX3Controller],grid_mode", 1]]) {
+        values.set(key, value);
+        mapping.selectTurn(0, 0x40, 0x01, 0xB0, "[Library]");
+        values.set(key, 0);
+    }
+    assert.equal(turned, 4, "browser, INFO, SHORTCUT and grid keep the knob");
+    assert.equal(zooms.length, 4);
+}
+
 // AUTO BEAT LOOP: press loops at the deck's size or exits; turn halves/doubles.
 {
     const {mapping, values, midiCalls} = load();
@@ -332,6 +359,8 @@ function engine_set(values, _mapping, group, key, value) { values.set(`${group},
     has("0xB5", "0x00", "PioneerXDJR1.beatFxBeat");
     has("0xB4", "0x02", "PioneerXDJR1.beatFxLevelMsb");
     has("0x91", "0x42", "PioneerXDJR1.selectPress");
+    has("0xB0", "0x40", "PioneerXDJR1.selectTurn");
+    has("0xB1", "0x41", "PioneerXDJR1.selectTurn");
     for (const chain of ["RX3 PITCH.xml", "RX3 CRUSH.xml", "XDJ-R1 TRANS.xml",
         "XDJ-R1 FLANGER.xml", "XDJ-R1 ECHO.xml"]) {
         assert.ok(fs.existsSync(path.join(root, "effects", "chains", chain)), chain);

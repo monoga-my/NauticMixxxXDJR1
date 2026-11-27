@@ -56,7 +56,8 @@ wrong effects. Run the install script again to put them back.
 
 | Gesture | Result |
 | --- | --- |
-| Turn SELECT (either deck) | Move through BROWSE |
+| Turn SELECT in PERFORMANCE | Zoom both waveforms: right = in, left = out |
+| Turn SELECT in BROWSE, INFO, SHORTCUT or grid editing | Move through the list, as before |
 | Press SELECT on the track list | Load the highlighted track into **that** deck |
 | Press SELECT anywhere else | Open BROWSE, or enter the highlighted source/folder |
 | SHIFT + press SELECT | Always open/enter, never load |

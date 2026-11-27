@@ -875,9 +875,9 @@
             </control>
             <!-- Browser, deck 1 side -->
             <control>
-                <description>SELECT turn: NauticMixxx RX3 browser move</description>
+                <description>SELECT turn: browse; in PERFORMANCE zoom the waveforms</description>
                 <group>[Library]</group>
-                <key>NauticRX3Browser.turn</key>
+                <key>PioneerXDJR1.selectTurn</key>
                 <status>0xB0</status>
                 <midino>0x40</midino>
                 <options>
@@ -885,9 +885,9 @@
                 </options>
             </control>
             <control>
-                <description>SHIFT + SELECT turn: browser move</description>
+                <description>SHIFT + SELECT turn: browse; in PERFORMANCE zoom the waveforms</description>
                 <group>[Library]</group>
-                <key>NauticRX3Browser.turn</key>
+                <key>PioneerXDJR1.selectTurn</key>
                 <status>0xB0</status>
                 <midino>0x41</midino>
                 <options>
@@ -1502,9 +1502,9 @@
             </control>
             <!-- Browser, deck 2 side -->
             <control>
-                <description>SELECT turn: NauticMixxx RX3 browser move</description>
+                <description>SELECT turn: browse; in PERFORMANCE zoom the waveforms</description>
                 <group>[Library]</group>
-                <key>NauticRX3Browser.turn</key>
+                <key>PioneerXDJR1.selectTurn</key>
                 <status>0xB1</status>
                 <midino>0x40</midino>
                 <options>
@@ -1512,9 +1512,9 @@
                 </options>
             </control>
             <control>
-                <description>SHIFT + SELECT turn: browser move</description>
+                <description>SHIFT + SELECT turn: browse; in PERFORMANCE zoom the waveforms</description>
                 <group>[Library]</group>
-                <key>NauticRX3Browser.turn</key>
+                <key>PioneerXDJR1.selectTurn</key>
                 <status>0xB1</status>
                 <midino>0x41</midino>
                 <options>

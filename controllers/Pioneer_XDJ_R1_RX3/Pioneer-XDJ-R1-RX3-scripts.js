@@ -686,6 +686,29 @@ PioneerXDJR1.trackListFocused = function() {
     return NauticRX3Browser.isOpen() && engine.getValue("[Library]", "focused_widget") === 3;
 };
 
+// SELECT turn: in PERFORMANCE it zooms both waveforms (right = in, left =
+// out), like the skin's ZOOM buttons. With BROWSE, INFO or SHORTCUT open,
+// in grid editing, or while SELECT is held, it keeps its browser job.
+PioneerXDJR1.selectTurn = function(channel, control, value, status, group) {
+    var delta = PioneerXDJR1.encoderDelta(value);
+    if (delta === 0) {
+        return;
+    }
+    if (NauticRX3Browser.isOpen() || NauticRX3Encoder.pressed ||
+            engine.getValue("[RX3Info]", "visible") > 0 ||
+            engine.getValue("[RX3Shortcut]", "visible") > 0 ||
+            engine.getValue("[RX3Controller]", "grid_mode") > 0) {
+        NauticRX3Browser.turn(channel, control, value, status, group);
+        return;
+    }
+    // Mixxx names these by zoom level: "down" zooms in, "up" zooms out.
+    var key = delta > 0 ? "waveform_zoom_down" : "waveform_zoom_up";
+    for (var deck = 1; deck <= 2; deck++) {
+        engine.setValue("[Channel" + deck + "]", key, 1);
+        engine.setValue("[Channel" + deck + "]", key, 0);
+    }
+};
+
 PioneerXDJR1.selectLoading = {};
 
 PioneerXDJR1.selectPress = function(channel, control, value, status, group) {

@@ -130,10 +130,10 @@ for deck in (1, 2):
     script(unit, "beatFxLevelLsb", fx_cc, 0x32, "SHIFT + LEVEL/DEPTH (LSB)")
 
     comment(f"Browser, deck {deck} side")
-    control("[Library]", "NauticRX3Browser.turn", cc, 0x40,
-            "SELECT turn: NauticMixxx RX3 browser move", SCRIPT)
-    control("[Library]", "NauticRX3Browser.turn", cc, 0x41,
-            "SHIFT + SELECT turn: browser move", SCRIPT)
+    script("[Library]", "selectTurn", cc, 0x40,
+           "SELECT turn: browse; in PERFORMANCE zoom the waveforms")
+    script("[Library]", "selectTurn", cc, 0x41,
+           "SHIFT + SELECT turn: browse; in PERFORMANCE zoom the waveforms")
     script(channel, "selectPress", note, 0x42,
            f"SELECT press: load into deck {deck} on the track list, else open/enter")
     control("[Library]", "NauticRX3Browser.enter", note, 0x43,

@@ -118,6 +118,7 @@ commit after `6e4ccba`.
 | Hot cues + KEY layer | A/B/C/CALL = hot cues 1–4 (also the sampler-mode notes 0x32–0x34). MODE toggles the KEY layer: A `pitch_up`, B `pitch_down`, C `sync_key`, CALL `reset_key`. MODE lamp lit = hot cues |
 | VINYL | Per-deck flag (default on). Top touch 9n 0x36 → `scratchEnable(deck, 600, 33⅓, 1/8, 1/256)`; top turn → `scratchTick`; release → `scratchDisable(deck, true)`. Side (0x01) → `jog`. Off = everything → `jog` |
 | KEY column | New **patch 0045** (`wtracktableview.cpp`): KEY added to both track-list layouts. The patch-count checks (44 → 45) were bumped in four scripts |
+| Waveform zoom from SELECT | `selectTurn`: browser closed (and no INFO/SHORTCUT/grid, SELECT not held) → `waveform_zoom_down` (in, turning right) / `waveform_zoom_up` (out) on both decks, like the skin's ZOOM buttons; otherwise `NauticRX3Browser.turn` |
 | Small, squished text | Skin `style.qss`: "Arial Narrow" → "Arial". Patch 0045 also makes the browser row font larger (0.5 → 0.56 of row height) at 100% letter spacing. Rows stay at 12, because `rx3display_test.cpp` checks that. Full screen (F11) also enlarges everything |
 
 Mixxx facts that drove the design, from the 2.5.6 source:
