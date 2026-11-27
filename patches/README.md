@@ -1,5 +1,17 @@
 # NauticMixxx native patches
 
+## 0047 — Aero waveforms, X-PAD orbs and REMAIN glass tube
+
+Recolours the three-band rekordbox waveforms for the Dark Frutiger Aero skin
+look: soft blue lows (with a dim blue halo on the detail waveform), white mids
+and soft pink highs, the same on both decks, the deck overviews and the
+browser thumbnails (`mixxx::rekordbox::aero`). The Blue and RGB waveform types
+are unchanged. The X-PAD paints its beat cells as glossy glass orbs (1/16–1/2
+icy cyan, 3/4 lavender, 1–4 soft pink) in a rounded smoked-glass trough, and
+its continuous rail runs from cyan to pink. The top-bar REMAIN stopwatch draws
+a recessed glass tube with a glowing pink-to-white fill. The deck badge waves
+and the WIDE range text turn magenta-pink.
+
 ## 0046 — XDJ-R1 MATCH filter and fixed Beat FX selection
 
 Adds `[RX3Browser],match_master`. On a USB track list it keeps the tracks in a

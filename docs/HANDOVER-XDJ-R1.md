@@ -140,6 +140,24 @@ indexes the user-ordered visible-effects list, so it was not used.
 
 The patch-count checks were bumped 45 → 46.
 
+## Round 4: Dark Frutiger Aero skin
+
+The skin keeps its layout and sizes; only colour, gloss and corner radius
+changed. Preview (a Qt mock with the real `style.qss`, not a screenshot of the
+app): [aero-preview.png](aero-preview.png).
+
+| Part | Where |
+| --- | --- |
+| Glass panels, gel pills, pink/cyan accents | Last section of `skins/XDJ_RX3_Mixxx/style.qss` ("Dark Frutiger Aero") |
+| Edge glows, bubbles, lens flares | `skins/XDJ_RX3_Mixxx/images/aero_backdrop.svg` on `#SkinContainer` |
+| Waveform colours for Mixxx-analysed tracks | `waveform.xml`, `deck.xml`, `rx3_library_deck.xml` |
+| rekordbox 3-band waveforms (blue lows, white mids, pink highs), X-PAD orbs, REMAIN glass tube, deck badge waves | Patch 0047 (needs a new build) |
+
+Without a new build, the drop-in installer's `style.qss` and SVGs already give
+the glass panels and accents; the waveforms, X-PAD and REMAIN bar keep their
+old look until 0047 is built. The Blue and RGB waveform types (Preferences >
+Waveforms) are not recoloured.
+
 ## Next steps
 
 0. Round 2 needs a new Windows build (patch 0045). Then check each row of the

@@ -3260,3 +3260,305 @@ QPushButton[rx3Bank="true"]:disabled { color: #777; }
 #RX3StatusTabs { min-height: 44px; max-height: 44px; background: #000; border: 1px solid #777; padding: 2px; margin: 0; }
 #RX3StatusTabs #RX3StatusTab { min-height: 36px; max-height: 36px; margin: 0; padding: 0; font-size: 18px; font-weight: normal; background: #000; color: #888; }
 #RX3StatusTabs #RX3StatusTab[displayValue="1"] { background: #9b9e99; color: #101010; }
+
+/* ======================================================================
+   Dark Frutiger Aero (v2.1)
+   Soft pink (#ff6ec7 / #ff8ac8) and icy cyan (#6fd6ff / #8fe9ff) glass on
+   black. These rules come last so they override the flat RX3 finish above;
+   they change colour, gloss and corner radius only, never sizes, margins or
+   padding, so the layout and proportions stay exactly as before. The
+   waveforms, X-PAD orbs, REMAIN tube and deck badge are painted in C++
+   (patch 0047).
+   ====================================================================== */
+
+/* Backdrop: black centre with pink/cyan glows and bubbles at the edges. The
+   containers between it and the panels are transparent so it shows in the
+   gaps; the waveforms and readouts keep their own black. */
+#SkinContainer {
+  background-color: #000000;
+  border-image: url(skin:/images/aero_backdrop.svg) 0 0 0 0 stretch stretch;
+}
+#TabStack, #Overview, #RX3TopbarWrapper, #RX3Topbar, #RX3TopbarStatus,
+#RX3TopbarGap, #RX3PerformanceArea, #Waveforms, #WaveformsContent,
+#WaveformDeckInfo, #RX3WaveformRightGap, #SidePanel_Container, #SidePanelBody,
+#RX3FxSpacer, #RX3TabGap, #RX3ZoomControls, #RX3ModeStripContainer, #Decks {
+  background: transparent;
+}
+#RX3InfoLabel, #RX3Clock, #RX3RecordDot { background: transparent; }
+
+/* ---- top bar: glass pill holding REMAIN and its glass tube ---- */
+#RX3TransportRail, #RX3BrowseRemainBlock {
+  background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+      stop:0 #34405a, stop:0.46 #182030, stop:0.5 #0b0f1a, stop:1 #141b2c);
+  border: 1px solid rgba(127, 227, 255, 0.45);
+  border-radius: 14px;
+}
+#RX3RemainBlock, #RX3ClockIcon, #RX3RemainLabel, #RX3MasterTime { background: transparent; }
+#RX3ProgressTrack, #RX3ProgressMeter { background: transparent; border-radius: 3px; }
+#RX3InfoLabel { color: #e9f8ff; }
+
+/* ---- deck info rail (DECK 1 / DECK 2, left of the waveforms) ---- */
+#WaveformInfo, #WaveformInfo[highlight="0"] {
+  background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+      stop:0 #1a2232, stop:0.5 #0a0d15, stop:1 #0d121c);
+  border: 1px solid rgba(127, 227, 255, 0.40);
+  border-radius: 10px;
+}
+#WaveformInfo[highlight="1"] { border: 1px solid #ff9ad5; }
+#WaveformInfoDeckTitle {
+  background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+      stop:0 #56627e, stop:0.46 #2c3549, stop:0.5 #1b2232, stop:1 #222b3e);
+  color: #e9f8ff;
+  border-bottom: 2px solid #6fd6ff;
+  border-top-left-radius: 9px;
+  border-top-right-radius: 9px;
+}
+#WaveformInfo_Header, #WaveformInfo_Key_Container, #WaveformInfo_Jump_Container,
+#WaveformInfo_Bars_Container {
+  background: transparent;
+  border-bottom: 1px solid rgba(127, 227, 255, 0.16);
+}
+#WaveformInfoSource, #WaveformInfo_Key, #WaveformInfoUsbIcon, #SidebarEject { background: transparent; }
+#WaveformInfoCaption { background: transparent; color: #b9dff0; }
+#WaveformInfo_Key { color: #ffffff; }
+#WaveformInfo_Bars, #WaveformInfoJump, #WaveformInfo_Jump_Container #WaveformInfoCaption { color: #eef6ff; background: transparent; }
+#WaveformInfo_Bars[highlight="1"], #WaveformInfoJump[highlight="1"],
+#WaveformInfo_Jump_Container #WaveformInfoCaption[highlight="1"] { color: #ff6ec7; }
+
+/* ---- BEAT FX side panel ---- */
+#RX3FxBezel {
+  background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+      stop:0 #1d2638, stop:0.5 #0b0e17, stop:1 #10161f);
+  border: 1px solid rgba(255, 138, 200, 0.45);
+  border-radius: 12px;
+}
+#RX3BeatFxTitle {
+  background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+      stop:0 #5e6886, stop:0.46 #323b52, stop:0.5 #1e2536, stop:1 #262f44);
+  color: #ffffff;
+  border-top-left-radius: 11px;
+  border-top-right-radius: 11px;
+  border-bottom: 1px solid rgba(255, 138, 200, 0.55);
+}
+#RX3FxContent, #RX3FxSelectorGap, #RX3FxReadoutGap { background: transparent; }
+#RX3BeatFxSelector, WEffectSelector#RX3BeatFxSelector {
+  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #000000, stop:1 #111827);
+  color: #ffffff;
+  border: 1px solid rgba(127, 227, 255, 0.50);
+  border-radius: 8px;
+}
+#RX3BeatFxCaption { background: transparent; color: #9fdcff; }
+/* CH SELECT: a dark glass pill, a beveled icy-blue glass button when MASTER. */
+#RX3FxMaster {
+  background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+      stop:0 #2a3550, stop:0.46 #141b2b, stop:0.5 #0a0e18, stop:1 #121a2a);
+  color: #e9f8ff;
+  border: 1px solid rgba(127, 227, 255, 0.45);
+  border-radius: 9px;
+}
+#RX3FxMaster[displayValue="1"] {
+  background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+      stop:0 #e3faff, stop:0.45 #8fe3ff, stop:0.5 #33b6ee, stop:1 #7fdcff);
+  color: #04182a;
+  border: 1px solid #e9fbff;
+  border-bottom: 1px solid #1a7fb4;
+  border-radius: 9px;
+}
+#RX3BeatFxReadout {
+  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #000000, stop:1 #0a0f1a);
+  border: 1px solid rgba(127, 227, 255, 0.25);
+  border-radius: 8px;
+}
+#RX3BeatFxBpmRow { background: transparent; }
+#RX3BeatFxBpm { color: #8fe9ff; background: transparent; }
+#RX3BeatFxBpmUnit { color: #9fdcff; background: transparent; }
+#RX3BeatFxMilliseconds, #RX3BeatFxBeat { color: #d8f6ff; background: transparent; }
+#RX3BeatFxQuantize { color: #ff9ad5; background: transparent; border-top: 1px solid rgba(127, 227, 255, 0.18); }
+
+/* ZOOM / GRID: glass pills, the active one glows cyan. */
+#RX3ZoomControls WPushButton { border-radius: 9px; }
+#RX3ZoomControls #ZoomOutButton { background: transparent; color: #9fdcff; }
+#RX3ZoomControls #ZoomInButton, #RX3ZoomControls #GridButton {
+  background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+      stop:0 #2a3550, stop:0.46 #141b2b, stop:0.5 #0a0e18, stop:1 #121a2a);
+  color: #8a96ad;
+  border: 1px solid rgba(127, 227, 255, 0.18);
+}
+#RX3ZoomControls #ZoomInButton { color: #8fe9ff; border: 1px solid #6fd6ff; }
+#RX3ZoomControls #ZoomInButton[displayValue="1"] { color: #8a96ad; border-color: rgba(127, 227, 255, 0.18); }
+#RX3ZoomControls #GridButton[displayValue="1"] { color: #8fe9ff; border-color: #6fd6ff; }
+
+/* STATUS / BEAT FX: a glass capsule; the open page is a glossy gel. */
+#RX3StatusTabs {
+  background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+      stop:0 #202a3e, stop:0.5 #0a0e18, stop:1 #121a2a);
+  border: 1px solid rgba(127, 227, 255, 0.45);
+  border-radius: 12px;
+}
+#RX3StatusTabs #RX3StatusTab {
+  background: transparent;
+  color: #8a96ad;
+  border-radius: 9px;
+}
+#RX3StatusTabs #RX3StatusTab[displayValue="1"] {
+  background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+      stop:0 #ffe3f3, stop:0.45 #ff9ad5, stop:0.5 #ff6ec7, stop:1 #ff9ad5);
+  color: #2b0420;
+}
+
+/* ---- BEAT FX SELECT and X-PAD band ---- */
+#RX3BeatStrip {
+  background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+      stop:0 #1e2739, stop:0.46 #0f1420, stop:0.5 #080b13, stop:1 #0e131e);
+  border: 1px solid rgba(127, 227, 255, 0.35);
+  border-radius: 12px;
+}
+#RX3BeatFxBank, #RX3XPad { background: transparent; }
+#RX3StripCaption, #RX3XPadLabel { color: #9fdcff; background: transparent; }
+/* Bank effects: pill-shaped gel capsules with a domed top reflection. */
+QPushButton[rx3Bank="true"] {
+  background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+      stop:0 #46526e, stop:0.46 #1f2638, stop:0.5 #0d1220, stop:1 #1a2440);
+  color: #ffffff;
+  border: 1px solid rgba(255, 138, 200, 0.60);
+  border-radius: 19px;
+}
+QPushButton[rx3Bank="true"]:pressed {
+  border: 1px solid #ffc2e4;
+}
+QPushButton[rx3Bank="true"][selected="true"] {
+  background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+      stop:0 #ffe6f4, stop:0.45 #ff9ad5, stop:0.5 #ff5fb4, stop:1 #ff9ad5);
+  color: #2b0420;
+  border: 1px solid #ffffff;
+}
+QPushButton[rx3Bank="true"][empty="true"] {
+  background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+      stop:0 #1a2030, stop:0.5 #06080e, stop:1 #0b1018);
+  border: 1px solid rgba(255, 138, 200, 0.25);
+}
+QPushButton[rx3Bank="true"]:disabled { color: #6b7385; }
+#RX3BankDelete { background: transparent; color: #9fdcff; border-radius: 12px; }
+#RX3BankDelete:checked { color: #ff6ec7; }
+
+/* ---- deck cards ---- */
+#Deck, #RX3LibraryDeck {
+  background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+      stop:0 #121827, stop:0.4 #06080e, stop:1 #04050a);
+  border: 1px solid rgba(127, 227, 255, 0.35);
+  border-radius: 12px;
+}
+#Deck[highlight="1"], #RX3LibraryDeck[highlight="1"] { border: 1px solid #ff9ad5; }
+#DeckHeader, #RX3LibraryDeckHeader {
+  background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+      stop:0 #56627e, stop:0.46 #2a3348, stop:0.5 #171d2c, stop:1 #1f2739);
+  border: 0;
+  border-top: 2px solid #6fd6ff;
+  border-top-left-radius: 11px;
+  border-top-right-radius: 11px;
+}
+#DeckNumBadge1, #DeckNumBadge2, #DeckNumBadgeNumberRow, #DeckNumBadgeParen,
+#DeckTitle, #DeckTitleNote, #DeckOnAir, #RX3LibraryDeckNumber, #RX3LibraryDeckTitle {
+  background: transparent;
+}
+#DeckTitle, #DeckTitleNote { color: #ffffff; }
+#DeckNumBadgeParen { color: #ff6ec7; }
+#DeckInfo, #DeckReadoutArea, #DeckReadoutRow, #TrackNoCol, #DeckCueCol,
+#TrackTimeContainer, #DeckTrackTimeTitle, #DeckTrackTimeWrapper, #DeckTempoPanel,
+#DeckOverviewContainer, #RX3LibraryDeckBody, #RX3LibraryDeckTimeBox {
+  background: transparent;
+}
+#TrackNoCaption, #TrackNoPlayMode, #TrackNoFill { background: transparent; }
+#TrackNoValue { color: #8fe9ff; background: transparent; }
+#TrackNoQuantize, #TrackNoQuantizeValue { background: transparent; }
+#TrackNoQuantize[highlight="1"], #TrackNoQuantizeValue[highlight="1"] { color: #ff6ec7; }
+#DeckTrackTime, #DeckTempoPercent, #BPMPercent, #DeckTempoCaption { background: transparent; }
+#TimeLabelRemain, #TimeLabelTime, #TimeLabelSlash { background: transparent; }
+
+/* A.HOT CUE and AUTO CUE as outlined gel pills. */
+#DeckCueLabel {
+  background: rgba(255, 110, 199, 0.10);
+  border: 1px solid #ff6ec7;
+  color: #ff9ad5;
+  border-radius: 9px;
+}
+#DeckAutoCueLabel {
+  background: rgba(127, 227, 255, 0.08);
+  border: 1px solid rgba(201, 243, 255, 0.85);
+  color: #e9f8ff;
+  border-radius: 9px;
+}
+
+/* Tempo range tag: a glowing magenta-pink gel pill (other ranges keep their
+   RX3 information colours, as gels). */
+#RateRangeBadge, #RateRangeBadge[highlight="0"] {
+  background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+      stop:0 #ffd1ea, stop:0.45 #ff7fcd, stop:0.5 #f0409f, stop:1 #ff7fcd);
+  border: 1px solid rgba(255, 230, 244, 0.9);
+  border-radius: 8px;
+}
+#RateRangeBadge[highlight="1"] {
+  background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+      stop:0 #d9ffd1, stop:0.45 #5cf06a, stop:0.5 #18d02c, stop:1 #5cf06a);
+}
+#RateRangeBadge[highlight="2"] {
+  background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+      stop:0 #ffffff, stop:0.5 #e6eef8, stop:1 #ffffff);
+}
+#RateRangeBadge[highlight="3"] { background: transparent; border: 0; }
+#RateDisplay, #RateRangeSuffix { background: transparent; }
+
+/* BPM box: rounded glass outline; the master deck's turns pink. */
+#DeckHeaderBpm {
+  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #10172a, stop:0.5 #000000, stop:1 #05070d);
+  border: 1px solid rgba(233, 248, 255, 0.85);
+  border-radius: 8px;
+}
+#DeckHeaderBpm[highlight="1"] { border: 1px solid #ff6ec7; }
+#DeckHeaderBpmTitleRow, #DeckHeaderBpmTitle { background: transparent; }
+#DeckHeaderBpmValue { color: #ffffff; background: transparent; }
+#DeckHeaderBpmValue[highlight="1"] { color: #ff6ec7; }
+#BpmMaster { background: transparent; color: transparent; border-radius: 5px; }
+#BpmMaster[highlight="1"] {
+  background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+      stop:0 #ffd1ea, stop:0.45 #ff7fcd, stop:0.5 #f0409f, stop:1 #ff7fcd);
+  color: #2b0420;
+}
+
+/* ---- STATUS page pads and grid tools ---- */
+#RX3ModeStripStack, #RX3ModeStripPage, #RX3PadModeStack, #RX3StatusStrip,
+#RX3StatusDeckWide, #RX3ModePage, #RX3GridTools, #RX3GridToolRow,
+#RX3ModeTitleGap, #RX3ModeRowGap, #RX3HotcueBottomSpace {
+  background: transparent;
+}
+#RX3ModeStripStack {
+  background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+      stop:0 #1e2739, stop:0.5 #080b13, stop:1 #0e131e);
+  border-radius: 12px;
+}
+#RX3ModeTitle { background: transparent; color: #9fdcff; }
+#RX3ModePad, #RX3JumpPad, #RX3GridTool, #RX3HotcueSlot {
+  background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+      stop:0 #3a4560, stop:0.46 #1b2233, stop:0.5 #0d1220, stop:1 #18223a);
+  border-radius: 6px;
+}
+#RX3JumpPad:pressed, #RX3GridTool:pressed { background: #33b6ee; }
+#RX3LoopButton {
+  background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+      stop:0 #46526e, stop:0.46 #1f2638, stop:0.5 #0d1220, stop:1 #1a2440);
+  border: 1px solid rgba(127, 227, 255, 0.55);
+  border-radius: 8px;
+}
+#RX3LoopButton[value="1"] {
+  background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+      stop:0 #e3faff, stop:0.45 #8fe3ff, stop:0.5 #33b6ee, stop:1 #7fdcff);
+  color: #04182a;
+}
+
+/* ---- BROWSE: same accents ---- */
+#RX3LibraryDeckBpmBox1, #RX3LibraryDeckBpmBox2 { border-radius: 8px; }
+#RX3LibraryDeckBpmBox1[highlight="1"], #RX3LibraryDeckBpmBox2[highlight="1"] { border-color: #ff6ec7; }
+#RX3LibraryDeckBpm1[highlight="1"], #RX3LibraryDeckBpm2[highlight="1"] { color: #ff6ec7; }
+#RX3LibraryMaster[highlight="1"] { color: #2b0420; background: #ff7fcd; }
+#RX3BrowserHeader QPushButton[active="true"] { border-top: 2px solid #6fd6ff; }
+#RX3PlaylistPreviewHeader { border-bottom: 1px solid #6fd6ff; }

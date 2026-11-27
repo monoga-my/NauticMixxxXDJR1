@@ -1,3 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="8" height="6" viewBox="0 0 8 6">
-  <rect width="8" height="6" fill="#dfe1e2"/>
+  <!-- Glowing pink fill with a white specular top. -->
+  <defs>
+    <linearGradient id="fill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffe6f4"/>
+      <stop offset="0.45" stop-color="#ff9ad5"/>
+      <stop offset="1" stop-color="#ff5fb4"/>
+    </linearGradient>
+  </defs>
+  <rect width="8" height="6" fill="url(#fill)"/>
 </svg>

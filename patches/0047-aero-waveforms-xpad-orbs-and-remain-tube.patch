@@ -1,0 +1,367 @@
+diff --git a/src/test/rx3display_test.cpp b/src/test/rx3display_test.cpp
+index e174eb0..46092ad 100644
+--- a/src/test/rx3display_test.cpp
++++ b/src/test/rx3display_test.cpp
+@@ -358,9 +358,10 @@ TEST(Rx3Overview, MeasuredBandsRiseFromBlueBaselineToWhiteEnvelope) {
+     QPainter painter(&image);
+     rx3::drawSummaryColumn(&painter, 3, 110, 1, 90, 30, 30, 30);
+     painter.end();
+-    EXPECT_EQ(QColor("#0055e1"), image.pixelColor(3, 100));
+-    EXPECT_EQ(QColor("#f0a000"), image.pixelColor(3, 65));
+-    EXPECT_EQ(QColor("#ffffff"), image.pixelColor(3, 25));
++    namespace aero = mixxx::rekordbox::aero;
++    EXPECT_EQ(QColor::fromRgb(aero::kLow), image.pixelColor(3, 100));
++    EXPECT_EQ(QColor::fromRgb(aero::kMid), image.pixelColor(3, 65));
++    EXPECT_EQ(QColor::fromRgb(aero::kHigh), image.pixelColor(3, 25));
+     EXPECT_EQ(0, image.pixelColor(3, 10).alpha());
+     EXPECT_EQ(0, image.pixelColor(3, 115).alpha());
+ }
+@@ -373,8 +374,8 @@ TEST(Rx3Overview, SilenceIsTransparentAndBandOnlyAudioKeepsItsColor) {
+     rx3::drawSummaryColumn(&painter, 5, 110, 1, 90, 0, 0, 90);
+     painter.end();
+     for (int y=0; y<image.height(); ++y) EXPECT_EQ(0, image.pixelColor(1,y).alpha());
+-    EXPECT_EQ(QColor("#0055e1"), image.pixelColor(3, 25));
+-    EXPECT_EQ(QColor("#ffffff"), image.pixelColor(5, 100));
++    EXPECT_EQ(QColor::fromRgb(mixxx::rekordbox::aero::kLow), image.pixelColor(3, 25));
++    EXPECT_EQ(QColor::fromRgb(mixxx::rekordbox::aero::kHigh), image.pixelColor(5, 100));
+ }
+ 
+ #include "widget/whotcuebutton.h"
+diff --git a/src/waveform/rekordboxwaveform.h b/src/waveform/rekordboxwaveform.h
+index 1b9bcff..071bf23 100644
+--- a/src/waveform/rekordboxwaveform.h
++++ b/src/waveform/rekordboxwaveform.h
+@@ -13,6 +13,18 @@ namespace mixxx::rekordbox {
+ 
+ enum class WaveformMode { Blue = 0, RGB = 1, ThreeBand = 2 };
+ 
++// NauticMixxx Aero three-band palette, shared by both decks, the detail
++// waveforms, the deck overviews and the browser thumbnails: soft blue lows,
++// white mids and soft pink highs. The glow colour is a dim halo just outside
++// the low-band envelope.
++namespace aero {
++inline constexpr QRgb kLow = 0xff4a96ffu;
++inline constexpr QRgb kLowGlow = 0xff173a80u;
++inline constexpr QRgb kMid = 0xfff4f8ffu;
++inline constexpr QRgb kLowMid = 0xffe2ecffu;
++inline constexpr QRgb kHigh = 0xffff8ac8u;
++} // namespace aero
++
+ // Preserve the ANLZ channels separately from Mixxx's lossy four-byte envelope.
+ // Published once by the importer, then immutable for the lifetime of the track.
+ struct WaveformColumn {
+@@ -205,14 +217,15 @@ void renderColumns(const WaveformSeries& series, WaveformMode mode,
+                 const float l=c.low*gains[0]/overviewPeak;
+                 const float m=0.425f*c.mid*gains[1]/overviewPeak;
+                 const float h=c.high*gains[2]/overviewPeak;
+-                draw(l+m+h,qRgb(255,255,255));
+-                draw(l+m,qRgb(255,166,0));
+-                draw(l,qRgb(0,85,225));
++                draw(l+m+h,aero::kHigh);
++                draw(l+m,aero::kMid);
++                draw(l,aero::kLow);
+             } else {
+-                draw(low,qRgb(0,81,225));
+-                draw(mid,qRgb(255,163,0));
+-                draw(std::min(low,mid),qRgb(179,101,6));
+-                draw(high,qRgb(245,234,214));
++                if (low > 0) draw(low*1.06f+0.012f,aero::kLowGlow);
++                draw(low,aero::kLow);
++                draw(mid,aero::kMid);
++                draw(std::min(low,mid),aero::kLowMid);
++                draw(high,aero::kHigh);
+             }
+         } else if (mode==WaveformMode::RGB) {
+             const int r=std::clamp(qRound(c.low*gains[0]),0,255);
+diff --git a/src/widget/rx3waveform.h b/src/widget/rx3waveform.h
+index fd992ba..1a952d7 100644
+--- a/src/widget/rx3waveform.h
++++ b/src/widget/rx3waveform.h
+@@ -210,14 +210,15 @@ inline void drawSummaryColumn(QPainter* painter, qreal x, qreal baseline,
+     }
+     const qreal orange = sum > 0 ? peak * (low + mid) / sum : 0;
+     const qreal blue = sum > 0 ? peak * low / sum : 0;
+-    painter->setPen(QColor("#ffffff"));
++    namespace aero = mixxx::rekordbox::aero;
++    painter->setPen(QColor::fromRgb(aero::kHigh));
+     painter->drawLine(QPointF(x, baseline), QPointF(x, baseline - peak));
+     if (orange > 0) {
+-        painter->setPen(QColor("#f0a000"));
++        painter->setPen(QColor::fromRgb(aero::kMid));
+         painter->drawLine(QPointF(x, baseline), QPointF(x, baseline - orange));
+     }
+     if (blue > 0) {
+-        painter->setPen(QColor("#0055e1"));
++        painter->setPen(QColor::fromRgb(aero::kLow));
+         painter->drawLine(QPointF(x, baseline), QPointF(x, baseline - blue));
+     }
+ }
+diff --git a/src/widget/wrx3beatfx.h b/src/widget/wrx3beatfx.h
+index 22cc99d..9b5f753 100644
+--- a/src/widget/wrx3beatfx.h
++++ b/src/widget/wrx3beatfx.h
+@@ -58,56 +58,124 @@ class WRx3XPad : public QSlider {
+         connect(this, &QSlider::sliderPressed, this, [this] { update(); });
+         connect(this, &QSlider::sliderReleased, this, [this] { update(); });
+     }
++    // Beat values up to 1/2 are icy cyan, 1 beat and longer soft pink, and
++    // 3/4 sits between them in lavender. Labels that are not beat values
++    // (the pitch layout) blend from cyan to pink across the row.
++    QColor orbTint(int index) const {
++        const QColor cyan("#6fd6ff"), pink("#ff8ac8"), lavender("#c3a8ff");
++        const QString label = index < m_cells.size() ? m_cells[index].label : QString();
++        bool ok = false;
++        double beats = label.toDouble(&ok);
++        if (!ok && label.contains('/')) {
++            bool numOk = false, denOk = false;
++            const double numerator = label.section('/', 0, 0).toDouble(&numOk);
++            const double denominator = label.section('/', 1, 1).toDouble(&denOk);
++            ok = numOk && denOk && denominator > 0;
++            if (ok) beats = numerator / denominator;
++        }
++        if (m_layout == Layout::Beats && ok && beats > 0) {
++            if (beats <= 0.5) return cyan;
++            if (beats >= 1) return pink;
++            return lavender;
++        }
++        const double t = m_cells.size() > 1 ? index / double(m_cells.size() - 1) : 0;
++        return QColor::fromRgbF(cyan.redF() + (pink.redF() - cyan.redF()) * t,
++                cyan.greenF() + (pink.greenF() - cyan.greenF()) * t,
++                cyan.blueF() + (pink.blueF() - cyan.blueF()) * t);
++    }
++    // A glossy glass orb: soft outer glow, tinted body lit from below, a
++    // curved white specular cap on top and a white label with a shadow.
++    void drawOrb(QPainter& painter, const QRectF& cell, const QString& label,
++            QColor tint, bool enabled, bool selected, double scale) const {
++        if (!enabled) tint = QColor("#5a6070");
++        const qreal diameter = qMax(qreal(8), qMin(cell.width() - 4 * scale, cell.height() - 6 * scale));
++        const QRectF orb(cell.center().x() - diameter / 2, cell.center().y() - diameter / 2,
++                diameter, diameter);
++        painter.save();
++        painter.setPen(Qt::NoPen);
++        const qreal glowRadius = diameter / 2 + (selected ? 6 : 3) * scale;
++        QRadialGradient glow(orb.center(), glowRadius);
++        QColor glowColor = tint; glowColor.setAlpha(selected ? 150 : 55);
++        glow.setColorAt(diameter / 2 / glowRadius * 0.9, glowColor);
++        glow.setColorAt(1, QColor(0, 0, 0, 0));
++        painter.setBrush(glow);
++        painter.drawEllipse(orb.center(), glowRadius, glowRadius);
++        QLinearGradient body(0, orb.top(), 0, orb.bottom());
++        QColor deep = tint.darker(selected ? 220 : 420); deep.setAlpha(235);
++        QColor mid = tint.darker(selected ? 140 : 250); mid.setAlpha(235);
++        QColor lit = selected ? tint.lighter(115) : tint.darker(140); lit.setAlpha(240);
++        body.setColorAt(0, deep);
++        body.setColorAt(0.55, mid);
++        body.setColorAt(1, lit);
++        painter.setBrush(body);
++        QColor rim = selected ? QColor(255, 255, 255, 235) : tint;
++        if (!selected) rim.setAlpha(enabled ? 190 : 90);
++        painter.setPen(QPen(rim, (selected ? 1.8 : 1.1) * scale));
++        painter.drawEllipse(orb);
++        painter.setPen(Qt::NoPen);
++        const QRectF cap(orb.left() + diameter * 0.17, orb.top() + diameter * 0.05,
++                diameter * 0.66, diameter * 0.44);
++        QLinearGradient shine(0, cap.top(), 0, cap.bottom());
++        shine.setColorAt(0, QColor(255, 255, 255, selected ? 200 : 150));
++        shine.setColorAt(1, QColor(255, 255, 255, 0));
++        painter.setBrush(shine);
++        painter.drawEllipse(cap);
++        QFont face = font();
++        face.setBold(true);
++        face.setPixelSize(qMax(8, qRound(qMin(16 * scale,
++                diameter * (label.size() > 3 ? 0.34 : 0.42)))));
++        painter.setFont(face);
++        painter.setPen(QColor(0, 0, 0, 170));
++        painter.drawText(orb.translated(scale, scale), Qt::AlignCenter, label);
++        painter.setPen(enabled ? QColor("#ffffff") : QColor("#8a8f9c"));
++        painter.drawText(orb, Qt::AlignCenter, label);
++        painter.restore();
++    }
+   protected:
+     void paintEvent(QPaintEvent*) override {
+         QPainter painter(this);
+         painter.setRenderHint(QPainter::Antialiasing);
+         const bool pressed = isEnabled() && isSliderDown() && m_layout == Layout::Continuous;
+-        const QColor accent = pressed ? QColor("#00afff") : QColor("#a0a0a0");
+         const double scale = height() / 40.0;
+         const double center = height() / 2.0;
+         const double left = 12 * scale;
+         const double right = width() - left;
+-        painter.fillRect(rect(), QColor("#202020"));
+-        painter.setPen(QPen(QColor(pressed ? "#0088c4" : "#626262"), 1));
+-        painter.setBrush(Qt::NoBrush);
+-        painter.drawRect(QRectF(rect()).adjusted(0.5, 0.5, -0.5, -0.5));
++        // Smoked-glass trough with a soft cyan rim; the orbs or rail sit in it.
++        {
++            const QRectF trough = QRectF(rect()).adjusted(0.5, 0.5, -0.5, -0.5);
++            const qreal radius = qMin(trough.height() / 2, 14 * scale);
++            QLinearGradient glass(0, 0, 0, height());
++            glass.setColorAt(0, QColor(28, 34, 52, 235));
++            glass.setColorAt(0.5, QColor(8, 10, 18, 240));
++            glass.setColorAt(1, QColor(14, 18, 30, 240));
++            painter.setPen(QPen(pressed ? QColor(127, 227, 255, 220) : QColor(127, 200, 255, 90), 1));
++            painter.setBrush(glass);
++            painter.drawRoundedRect(trough, radius, radius);
++        }
+         if (m_layout == Layout::Beats || m_layout == Layout::Pitch) {
+             const double cellWidth = width() / double(qMax(1, m_cells.size()));
+-            auto face = font(); face.setPixelSize(qRound(16 * scale)); face.setBold(true);
+-            painter.setFont(face);
+             for (int index = 0; index < m_cells.size(); ++index) {
+-                const QRectF cell(index * cellWidth, 0.5, cellWidth, height() - 1);
++                const QRectF cell(index * cellWidth, 0, cellWidth, height());
+                 const bool selected = index == m_currentCell && m_cells[index].enabled;
+-                if (selected) painter.fillRect(cell, QColor("#777b78"));
+-                painter.setPen(QPen(QColor("#929292"), 1));
+-                if (index > 0) painter.drawLine(cell.topLeft(), cell.bottomLeft());
+-                painter.setPen(QColor(m_cells[index].enabled ? "#eeeeee" : "#666666"));
+-                painter.drawText(cell, Qt::AlignCenter, m_cells[index].label);
+-            }
+-            if (m_currentCell >= 0 && m_cells[m_currentCell].enabled) {
+-                // Paint after the dividers so the selected cell keeps a
+-                // complete one-pixel white outline, including on release.
+-                painter.setRenderHint(QPainter::Antialiasing, false);
+-                painter.setPen(QPen(Qt::white, 1));
+-                painter.setBrush(Qt::NoBrush);
+-                painter.drawRect(QRectF(m_currentCell * cellWidth + 1.5,
+-                        1.5, cellWidth - 3, height() - 3));
++                drawOrb(painter, cell, m_cells[index].label,
++                        orbTint(index), m_cells[index].enabled, selected, scale);
+             }
+             return;
+         }
+         if (right - left < 30 * scale) return;
++        const QColor cyan = pressed ? QColor("#a8efff") : QColor("#6fd6ff");
++        const QColor pink = pressed ? QColor("#ffc2e4") : QColor("#ff8ac8");
+         QLinearGradient railColor(left, 0, right, 0);
+-        railColor.setColorAt(0, accent);
+-        railColor.setColorAt(0.12, accent);
+-        railColor.setColorAt(0.5, QColor("#65696b"));
+-        railColor.setColorAt(0.88, accent);
+-        railColor.setColorAt(1, accent);
++        railColor.setColorAt(0, cyan);
++        railColor.setColorAt(0.12, cyan);
++        railColor.setColorAt(0.5, QColor("#4a5068"));
++        railColor.setColorAt(0.88, pink);
++        railColor.setColorAt(1, pink);
+         if (pressed) {
+             QLinearGradient glow(left, 0, right, 0);
+-            glow.setColorAt(0, QColor(0, 175, 255, 45));
+-            glow.setColorAt(0.5, QColor(0, 175, 255, 0));
+-            glow.setColorAt(1, QColor(0, 175, 255, 45));
++            glow.setColorAt(0, QColor(111, 214, 255, 70));
++            glow.setColorAt(0.5, QColor(255, 255, 255, 0));
++            glow.setColorAt(1, QColor(255, 138, 200, 70));
+             painter.fillRect(QRectF(left, center - 9 * scale,
+                     right - left, 18 * scale), glow);
+         }
+@@ -124,13 +192,20 @@ class WRx3XPad : public QSlider {
+         painter.setPen(Qt::NoPen);
+         painter.setBrush(railColor);
+         painter.drawPolygon(rail);
+-        painter.setPen(QPen(accent, 2 * scale, Qt::SolidLine, Qt::SquareCap, Qt::MiterJoin));
++        // Glossy top half of the rail.
++        QLinearGradient sheen(0, center - 4.5 * scale, 0, center);
++        sheen.setColorAt(0, QColor(255, 255, 255, 120));
++        sheen.setColorAt(1, QColor(255, 255, 255, 0));
++        painter.setBrush(sheen);
++        painter.drawPolygon(rail);
++        painter.setPen(QPen(cyan, 2 * scale, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+         painter.setBrush(Qt::NoBrush);
+         QPolygonF arrow;
+         arrow << QPointF(left + 5 * scale, center - 4 * scale)
+               << QPointF(left, center)
+               << QPointF(left + 5 * scale, center + 4 * scale);
+         painter.drawPolyline(arrow);
++        painter.setPen(QPen(pink, 2 * scale, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+         arrow.clear();
+         arrow << QPointF(right - 5 * scale, center - 4 * scale)
+               << QPointF(right, center)
+diff --git a/src/widget/wrx3countdown.h b/src/widget/wrx3countdown.h
+index a3fd888..bf0f7b7 100644
+--- a/src/widget/wrx3countdown.h
++++ b/src/widget/wrx3countdown.h
+@@ -38,6 +38,38 @@ class Rx3Countdown {
+     QElapsedTimer m_clock;qint64 m_leftMs=0,m_totalMs=0;bool m_running=false;
+ };
+ 
++namespace rx3 {
++// Recessed glass tube: dark inset with a top shadow and a light lower lip,
++// filled by a pink-to-white glow that ends in a bright light orb.
++inline void drawAeroTube(QPainter* painter,QRectF bar,double fraction,double scale) {
++    if (bar.width()<=0) return;
++    painter->save();painter->setRenderHint(QPainter::Antialiasing);
++    bar=bar.adjusted(0,-1.5*scale,0,1.5*scale);
++    const qreal radius=bar.height()/2;
++    QLinearGradient inset(0,bar.top(),0,bar.bottom());
++    inset.setColorAt(0,QColor(0,0,0,255));inset.setColorAt(0.6,QColor(14,16,28));inset.setColorAt(1,QColor(40,46,70));
++    painter->setPen(QPen(QColor(150,215,255,110),1));painter->setBrush(inset);
++    painter->drawRoundedRect(bar,radius,radius);
++    const qreal filled=bar.width()*qBound(0.0,fraction,1.0);
++    if (filled>0.5) {
++        const QRectF fill(bar.left(),bar.top(),qMax(bar.height(),filled),bar.height());
++        QLinearGradient glow(fill.left(),0,fill.right(),0);
++        glow.setColorAt(0,QColor(255,95,180,200));glow.setColorAt(0.85,QColor(255,170,215));glow.setColorAt(1,QColor(255,255,255));
++        painter->setPen(Qt::NoPen);painter->setBrush(glow);
++        painter->drawRoundedRect(fill.adjusted(0.5,0.5,-0.5,-0.5),radius,radius);
++        const QPointF tip(fill.right()-radius,fill.center().y());
++        QRadialGradient orb(tip,radius*2.6);
++        orb.setColorAt(0,QColor(255,255,255,240));orb.setColorAt(0.35,QColor(255,190,228,170));orb.setColorAt(1,QColor(255,95,180,0));
++        painter->setBrush(orb);painter->drawEllipse(tip,radius*2.6,radius*2.6);
++    }
++    QLinearGradient sheen(0,bar.top(),0,bar.center().y());
++    sheen.setColorAt(0,QColor(255,255,255,90));sheen.setColorAt(1,QColor(255,255,255,0));
++    painter->setPen(Qt::NoPen);painter->setBrush(sheen);
++    painter->drawRoundedRect(QRectF(bar.left()+radius,bar.top()+0.5,qMax(0.0,bar.width()-2*radius),bar.height()/2),radius/2,radius/2);
++    painter->restore();
++}
++} // namespace rx3
++
+ class Rx3CountdownRail : public QPushButton {
+   public:
+     Rx3CountdownRail(Rx3Countdown* timer,std::function<void()> open,QWidget* parent)
+@@ -48,7 +80,7 @@ class Rx3CountdownRail : public QPushButton {
+     }
+   protected:
+     void paintEvent(QPaintEvent*) override {
+-        QPainter painter(this);painter.fillRect(rect(),QColor("#202020"));
++        QPainter painter(this);painter.fillRect(rect(),QColor(0,0,0,0));
+         const double scale=height()/28.0;
+         QFont font("Arial");font.setPixelSize(qMax(9,qRound(13*scale)));painter.setFont(font);
+         painter.setPen(QColor("#ddd"));
+@@ -65,8 +97,7 @@ class Rx3CountdownRail : public QPushButton {
+         painter.drawText(QRectF(26*scale,0,140*scale,height()),Qt::AlignVCenter,
+                 "REMAIN  "+Rx3Countdown::text(m_timer->seconds()));
+         const QRectF bar(170*scale,height()/2.0-2*scale,qMax(0.0,width()-178*scale),4*scale);
+-        painter.fillRect(bar,QColor("#111111"));
+-        painter.fillRect(QRectF(bar.topLeft(),QSizeF(bar.width()*m_timer->fraction(),bar.height())),Qt::white);
++        rx3::drawAeroTube(&painter,bar,m_timer->fraction(),scale);
+     }
+   private:
+     Rx3Countdown* m_timer;std::function<void()> m_open;
+diff --git a/src/widget/wrx3deckbadge.h b/src/widget/wrx3deckbadge.h
+index 3cd0ef2..e0b1828 100644
+--- a/src/widget/wrx3deckbadge.h
++++ b/src/widget/wrx3deckbadge.h
+@@ -39,7 +39,7 @@ inline void drawDeckBadge(QPainter* painter, const QRectF& rect, int deck, int s
+     font.setBold(false);
+     painter->setFont(font);
+     painter->drawText(QRectF(0, 13, 92, 31), Qt::AlignCenter, QString::number(deck));
+-    painter->setPen(QPen(QColor("#F84418"), 1.4, Qt::SolidLine, Qt::RoundCap));
++    painter->setPen(QPen(QColor("#FF5FB4"), 1.4, Qt::SolidLine, Qt::RoundCap));
+     painter->setBrush(Qt::NoBrush);
+     for (int wave = 0; wave < (stage > 0 ? 2 : 0); ++wave) {
+         for (int side : {-1, 1}) {
+diff --git a/src/widget/wrx3performancewidgets.h b/src/widget/wrx3performancewidgets.h
+index e6d152b..97e0d5f 100644
+--- a/src/widget/wrx3performancewidgets.h
++++ b/src/widget/wrx3performancewidgets.h
+@@ -40,7 +40,7 @@ class WRx3RangeBadge : public WWidgetGroup {
+         QPainterPath path;
+         path.addText(QPointF((width()-metrics.horizontalAdvance(text))/2,
+                 (height()-metrics.height())/2+metrics.ascent()),labelFont,text);
+-        const QColor color(wide ? "#BF3413" : "#000000");
++        const QColor color(wide ? "#FF3FA4" : "#000000");
+         painter.setPen(QPen(color,1));painter.setBrush(color);painter.drawPath(path);
+     }
+   private:

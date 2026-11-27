@@ -172,14 +172,14 @@
                     <BgColor>#000000</BgColor>
                     <AxesColor>#00000000</AxesColor>
                     <SignalColor>#1d6fe0</SignalColor>
-                    <SignalLowColor>#0055e1</SignalLowColor>
-                    <SignalMidColor>#b4690a</SignalMidColor>
-                    <SignalHighColor>#f5ebd7</SignalHighColor>
+                    <SignalLowColor>#4a96ff</SignalLowColor>
+                    <SignalMidColor>#f4f8ff</SignalMidColor>
+                    <SignalHighColor>#ff8ac8</SignalHighColor>
                     <SignalRGBLowColor>#ff3030</SignalRGBLowColor>
                     <SignalRGBMidColor>#32d060</SignalRGBMidColor>
                     <SignalRGBHighColor>#357bff</SignalRGBHighColor>
                     <PlayedOverlayColor>#99000000</PlayedOverlayColor>
-                    <PlayPosColor>#ffffff</PlayPosColor><PlayPosStoppedColor>#ff0000</PlayPosStoppedColor><PlayPosWidth>2</PlayPosWidth>
+                    <PlayPosColor>#ffffff</PlayPosColor><PlayPosStoppedColor>#ff3fa4</PlayPosStoppedColor><PlayPosWidth>2</PlayPosWidth>
                     <Mark><Control>cue_point</Control><Rx3Triangle>true</Rx3Triangle><Color>#ffffff</Color><TextColor>#ffffff</TextColor><Align>bottom</Align></Mark>
 
 

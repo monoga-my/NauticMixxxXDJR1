@@ -1,3 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="8" height="6" viewBox="0 0 8 6">
-  <rect width="8" height="6" fill="#34383b"/>
+  <!-- Recessed glass tube: dark inset, light lower lip. -->
+  <defs>
+    <linearGradient id="inset" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#000000"/>
+      <stop offset="0.6" stop-color="#0e101c"/>
+      <stop offset="1" stop-color="#2c3350"/>
+    </linearGradient>
+  </defs>
+  <rect width="8" height="6" fill="url(#inset)"/>
 </svg>
