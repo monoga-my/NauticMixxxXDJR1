@@ -129,6 +129,17 @@ positions. That is why every chain file the mapping uses must be listed by the
 installers. `[EffectRack1_EffectUnitN_EffectM] loaded_effect` is writable but
 indexes the user-ordered visible-effects list, so it was not used.
 
+## Round 3: Play/Cue, MATCH, native Beat FX, quantize
+
+| Request | Implementation |
+| --- | --- |
+| Play/Cue not CDJ-like | `PlayDecks` used to act on *release* and flip `play`, so PLAY pressed while holding CUE was undone. Now: press only, toggle `play` (during a cue preview Mixxx treats the toggle as "latch play"). `CueDecks` = `cue_default` press/release (Mixxx's CDJ cue logic); with no cue point (`cue_point == -1`) it pulses `cue_set`. Lights come from `play_indicator` / `cue_indicator` |
+| Filter list to master deck | **Patch 0046**: `[RX3Browser],match_master` (pulse) filters the USB track list on screen with `rx3::matchListTrackIds` (compatible key via `KeyUtils::getCompatibleKeys` of the master deck's current `key`, `bpm` within 16%, list order kept). The master deck is `[RX3Display],master1/2`. Press again restores the saved list. Mapped to TIME (9n 0x3E) while the browser is open |
+| Beat FX silent | Moved to the native Beat FX, unit 1, which the BEAT FX panel shows. Patch 0046 adds `[RX3BeatFx],select_fixed` / `selected_fixed` (1 ECHO, 3 FLANGER, 7 TREMOLO, ...; fixed, independent of the language). The button routes `group_[ChannelN]_enable`, enables slot and unit, and sets `[RX3SidePanel],beatfx`. BEAT → `[RX3BeatFx],xpad_position`; LEVEL/DEPTH → `[RX3BeatFx],amount`. One effect at a time (one unit). Units 3/4 and the XDJ-R1 chain presets are unused now |
+| Quantize toggle | SHIFT + MASTER TEMPO (9n 0x56) toggles `quantize` on both decks and sends no MIDI, so the MASTER TEMPO lamp keeps showing keylock |
+
+The patch-count checks were bumped 45 → 46.
+
 ## Next steps
 
 0. Round 2 needs a new Windows build (patch 0045). Then check each row of the

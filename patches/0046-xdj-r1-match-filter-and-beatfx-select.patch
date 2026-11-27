@@ -1,0 +1,214 @@
+diff --git a/src/test/rx3display_test.cpp b/src/test/rx3display_test.cpp
+index de8fd32..e174eb0 100644
+--- a/src/test/rx3display_test.cpp
++++ b/src/test/rx3display_test.cpp
+@@ -922,6 +922,23 @@ TEST(Rx3BrowserNavigation, MatchingRequiresMetadataAndExcludesReference) {
+     EXPECT_TRUE(rx3::matchingTrackIds(tracks,"/usb/reference.wav","",120).isEmpty());
+     EXPECT_TRUE(rx3::matchingTrackIds(tracks,"/usb/reference.wav","Am",0).isEmpty());
+ }
++TEST(Rx3BrowserNavigation, MatchListKeepsListOrderCompatibleKeysAndSixteenPercent) {
++    using mixxx::rekordbox::RuntimeTrack;
++    QHash<quint32,RuntimeTrack> tracks;
++    auto add=[&](quint32 id,QString key,double bpm,QString path) {
++        RuntimeTrack track;track.rekordboxId=id;track.key=key;track.bpm=bpm;track.resolvedAudioPath=path;tracks.insert(id,track);
++    };
++    add(1,"Am",120,"/usb/reference.wav");add(2,"Am",135,"/usb/fast.wav");
++    add(3,"C",104,"/usb/slow.wav");add(4,"Am",141,"/usb/too-fast.wav");
++    add(5,"F#",120,"/usb/clash.wav");add(6,"Em",118,"/usb/fifth.wav");
++    const QList<quint32> list{6,5,4,3,2,1,99};
++    EXPECT_EQ((QList<quint32>{6,3,2}),rx3::matchListTrackIds(tracks,list,"/usb/reference.wav",
++            mixxx::track::io::key::A_MINOR,120));
++    EXPECT_TRUE(rx3::matchListTrackIds(tracks,list,"/usb/reference.wav",
++            mixxx::track::io::key::INVALID,120).isEmpty());
++    EXPECT_TRUE(rx3::matchListTrackIds(tracks,list,"/usb/reference.wav",
++            mixxx::track::io::key::A_MINOR,0).isEmpty());
++}
+ class Rx3UsbFolderTest : public LibraryTest {};
+ TEST_F(Rx3UsbFolderTest, RawUsbTracksRemainTemporaryAndConfined) {
+     QTemporaryDir usb;
+diff --git a/src/widget/rx3beatfxeffects.h b/src/widget/rx3beatfxeffects.h
+index a90be59..afcbd7e 100644
+--- a/src/widget/rx3beatfxeffects.h
++++ b/src/widget/rx3beatfxeffects.h
+@@ -9,14 +9,20 @@
+ 
+ // A performance-oriented subset of the actual built-in processors. Do not
+ // expose utility/EQ processors here or invent names for missing RX3 algorithms.
+-inline bool isRx3BeatFx(const EffectManifestPointer& manifest) {
+-    if (!manifest) return false;
++// [RX3BeatFx],select_fixed and selected_fixed number the effects in this
++// order (1-based), whatever the display language or installed plugins.
++inline const QStringList& rx3BeatFxIds() {
+     static const QStringList ids{
+             "org.mixxx.effects.echo", "org.mixxx.effects.reverb",
+             "org.mixxx.effects.flanger", "org.mixxx.effects.phaser",
+             "org.mixxx.effects.filter", "org.mixxx.effects.pitchshift",
+             "org.mixxx.effects.tremolo", "org.mixxx.effects.glitch"};
+-    return ids.contains(manifest->id());
++    return ids;
++}
++
++inline bool isRx3BeatFx(const EffectManifestPointer& manifest) {
++    if (!manifest) return false;
++    return rx3BeatFxIds().contains(manifest->id());
+ }
+ 
+ inline QList<EffectManifestPointer> rx3BeatFxManifests(
+diff --git a/src/widget/rx3browsernavigation.h b/src/widget/rx3browsernavigation.h
+index 4d9ee8b..8dc4440 100644
+--- a/src/widget/rx3browsernavigation.h
++++ b/src/widget/rx3browsernavigation.h
+@@ -46,4 +46,26 @@ inline QList<quint32> matchingTrackIds(
+     });
+     return result;
+ }
++// XDJ-R1 MATCH filter: the tracks of the list on screen, in their order, whose
++// key is compatible with the master deck's current key (same, relative, or one
++// step around the circle of fifths) and whose tempo is within `tolerance` of
++// the master deck's current tempo. The master deck's own track is left out.
++inline QList<quint32> matchListTrackIds(
++        const QHash<quint32,mixxx::rekordbox::RuntimeTrack>& tracks,
++        const QList<quint32>& listIds, const QString& referencePath,
++        mixxx::track::io::key::ChromaticKey key, double bpm, double tolerance=0.16) {
++    QList<quint32> result;
++    if(key==mixxx::track::io::key::INVALID || !std::isfinite(bpm) || bpm<=0) return result;
++    const auto compatible=KeyUtils::getCompatibleKeys(key);
++    for(const auto id:listIds) {
++        const auto track=tracks.constFind(id);
++        if(track==tracks.cend() || result.contains(id)) continue;
++        if(!referencePath.isEmpty() && track->resolvedAudioPath==referencePath) continue;
++        if(!track->bpm || !std::isfinite(*track->bpm) || *track->bpm<=0) continue;
++        if(std::abs(*track->bpm-bpm)>bpm*tolerance) continue;
++        if(!compatible.contains(KeyUtils::guessKeyFromText(track->key))) continue;
++        result.append(id);
++    }
++    return result;
++}
+ } // namespace rx3
+diff --git a/src/widget/wrx3beatfx.h b/src/widget/wrx3beatfx.h
+index 6577543..22cc99d 100644
+--- a/src/widget/wrx3beatfx.h
++++ b/src/widget/wrx3beatfx.h
+@@ -294,7 +294,7 @@ class WRx3BeatFx : public QWidget {
+             if (chain) m_slot = chain->getEffectSlot(0);
+         }
+         if (m_slot) {
+-            connect(m_slot.data(), &EffectSlot::effectChanged, this, [this] { bindParameter(); });
++            connect(m_slot.data(), &EffectSlot::effectChanged, this, [this] { bindParameter(); publishSelectedFixed(); });
+             connect(m_slot.data(), &EffectSlot::parametersChanged, this, [this] { bindParameter(); });
+         }
+         auto* enabled = new ControlProxy(unitGroup(), "enabled", this, ControlFlag::NoAssertIfMissing);
+@@ -315,6 +315,18 @@ class WRx3BeatFx : public QWidget {
+             const int index = qRound(value) - 1;
+             if (index >= 0 && index < list.size()) selectEffect(list[index], false);
+         });
++        // Fixed numbering for controllers (see rx3BeatFxIds): select_fixed
++        // loads an effect without turning it on; selected_fixed reports the
++        // loaded effect (0 = none or another effect).
++        ensureControl("select_fixed", 0, [this](double value) {
++            if (!m_effects) return;
++            const int index = qRound(value) - 1;
++            if (index < 0 || index >= rx3BeatFxIds().size()) return;
++            for (const auto& manifest : rx3BeatFxManifests(m_effects->getBackendManager()))
++                if (manifest->id() == rx3BeatFxIds().at(index)) {selectEffect(manifest, false); break;}
++        });
++        ensureControl("selected_fixed", 0, [](double) {});
++        publishSelectedFixed();
+         ensureControl("bank_recall", 0, [this](double value) {if (value >= 1 && value <= 4) useBank(qRound(value) - 1);});
+         ensureControl("bank_store", 0, [this](double value) {if (value >= 1 && value <= 4 && m_slot && m_slot->isLoaded()) registerBank(qRound(value) - 1, m_slot->getManifest());});
+         ensureControl("bank_clear", 0, [this](double value) {if (value >= 1 && value <= 4) clearBank(qRound(value) - 1);});
+@@ -450,6 +462,12 @@ class WRx3BeatFx : public QWidget {
+         auto* proxy = new ControlProxy(configKey.group, configKey.item, this);
+         proxy->connectValueChanged(this, std::move(callback));
+     }
++    void publishSelectedFixed() {
++        const ConfigKey key("[RX3BeatFx]", "selected_fixed");
++        if (!ControlObject::exists(key)) return;
++        const auto manifest = m_slot && m_slot->isLoaded() ? m_slot->getManifest() : EffectManifestPointer();
++        ControlObject::set(key, manifest ? rx3BeatFxIds().indexOf(manifest->id()) + 1 : 0);
++    }
+     std::vector<std::unique_ptr<ControlObject>> m_controls;
+     using Units = EffectManifestParameter::UnitsHint;
+     static ConfigKey bankKey(int index) {
+diff --git a/src/widget/wrx3browser.h b/src/widget/wrx3browser.h
+index fe5a9da..2fd4f79 100644
+--- a/src/widget/wrx3browser.h
++++ b/src/widget/wrx3browser.h
+@@ -326,6 +326,8 @@ class WRx3Browser : public QWidget, public WBaseWidget {
+         makeControl("tag_list",[this](double value){if(value>0) openSourceSection("TAG LIST");});
+         makeControl("playlist",[this](double value){if(value>0) openSourceSection("PLAYLIST");});
+         makeControl("search",[this](double value){if(value>0 && prepareSourceNavigation()) openSearch();});
++        makeControl("match_master",[this](double value){if(value>0) toggleMatchMaster();});
++        m_matchActive=std::make_unique<ControlObject>(ConfigKey("[RX3Browser]","match_master_active"));
+         makeControl("my_settings",[this](double value){if(value>0) {showBrowser();showSources();openSourceSettings();}});
+         for(const auto& name:{"play_mode","eject_lock"}) {
+             const auto key=ConfigKey("[RX3Settings]",name);
+@@ -961,6 +963,58 @@ class WRx3Browser : public QWidget, public WBaseWidget {
+         if(m_facets->count()) m_facets->setCurrentRow(0);
+         updateFacetPreview();if(!m_facets->count()) setPreview("FOLDER",{});
+     }
++    // XDJ-R1 MATCH: filter the USB track list on screen to tracks that mix with
++    // the master deck (compatible key, tempo within 16%). Press again, or open
++    // another list, to see the whole list again.
++    bool matchFilterShown() const {
++        auto* table=m_library->getCurrentTrackTableView();
++        const auto* model=table ? dynamic_cast<TrackModel*>(table->model()) : nullptr;
++        return m_match.active && model && m_level==BrowserLevel::Tracks &&
++                model->modelKey(true).contains(QStringLiteral(":rx3-match"));
++    }
++    void toggleMatchMaster() {
++        auto* feature=m_backend ? m_backend->rekordboxFeature() : nullptr;
++        if(!feature) return;
++        if(matchFilterShown()) {
++            const auto saved=m_match;m_match=MatchFilter();m_matchActive->set(0);
++            feature->showTrackIds(saved.root,saved.ids,"match-return");
++            showTrackList(saved.returnLevel);m_breadcrumb->setText(saved.breadcrumb);
++            m_pendingFolderTrack=saved.location;selectPendingFolderTrack();
++            return;
++        }
++        m_match=MatchFilter();m_matchActive->set(0);
++        auto* table=m_library->getCurrentTrackTableView();
++        auto* model=table ? dynamic_cast<TrackModel*>(table->model()) : nullptr;
++        const auto current=catalog();
++        if(m_pages->currentIndex()!=0 || m_level!=BrowserLevel::Tracks || !model || !current) return;
++        const int deck=ControlObject::get(ConfigKey("[RX3Display]","master2"))>0 ? 2 : 1;
++        const QString group=QString("[Channel%1]").arg(deck);
++        const auto key=static_cast<mixxx::track::io::key::ChromaticKey>(
++                qRound(ControlObject::get(ConfigKey(group,"key"))));
++        const double bpm=ControlObject::get(ConfigKey(group,"bpm"));
++        const auto reference=PlayerInfo::instance().getTrackInfo(group);
++        if(!reference || key==mixxx::track::io::key::INVALID || bpm<=0) {
++            m_breadcrumb->setText(QString("MATCH: LOAD A TRACK WITH KEY AND BPM ON DECK %1").arg(deck));
++            return;
++        }
++        const auto tracks=current->tracks();
++        QHash<QString,quint32> idsByPath;
++        for(const auto& track:tracks) idsByPath.insert(track.resolvedAudioPath,track.rekordboxId);
++        MatchFilter saved;saved.root=m_currentRoot;saved.breadcrumb=m_breadcrumb->text();
++        saved.returnLevel=m_returnLevel;
++        if(table->currentIndex().isValid()) saved.location=model->getTrackLocation(table->currentIndex());
++        for(int row=0;row<table->model()->rowCount();++row)
++            if(const auto id=idsByPath.value(model->getTrackLocation(table->model()->index(row,0)))) saved.ids.append(id);
++        if(saved.ids.isEmpty()) return;
++        const auto ids=rx3::matchListTrackIds(tracks,saved.ids,reference->getLocation(),key,bpm);
++        saved.active=true;m_match=saved;
++        feature->showTrackIds(saved.root,ids,"rx3-match");
++        showTrackList(saved.returnLevel);
++        m_breadcrumb->setText(QString("MATCH DECK %1: %2 · %3 BPM ±16% · %4 of %5")
++                .arg(deck).arg(KeyUtils::keyToString(key)).arg(bpm,0,'f',1)
++                .arg(ids.size()).arg(saved.ids.size()));
++        m_matchActive->set(1);
++    }
+     void showMatching() {
+         m_facetField="matching";m_facets->clear();m_level=BrowserLevel::FacetValues;
+         m_leftColumn->show();m_sidebar->hide();m_library->hide();m_facets->show();m_emptySpace->hide();
+@@ -1408,6 +1462,9 @@ class WRx3Browser : public QWidget, public WBaseWidget {
+     TrackPointer m_toolTrack;
+     quint32 m_toolPlaylist=0;
+     rx3::TrackFilter m_filter;
++    struct MatchFilter {bool active=false;QString root;QList<quint32> ids;QString breadcrumb;QString location;BrowserLevel returnLevel=BrowserLevel::Categories;};
++    MatchFilter m_match;
++    std::unique_ptr<ControlObject> m_matchActive;
+     QHash<QString,rx3::TagList> m_tagLists;
+     std::unique_ptr<rx3::TouchPreview> m_toolPreview;
+     double m_previewPosition=0;

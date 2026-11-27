@@ -279,37 +279,97 @@ function engine_set(values, _mapping, group, key, value) { values.set(`${group},
     close(values.get("[Channel1],jog"), 2);
 }
 
-// Beat FX: deck 1 uses effect unit 3, deck 2 unit 4; ROLL is a loop roll.
+// Beat FX: TRANS/FLANGER/ECHO drive the native Beat FX (unit 1); ROLL is a loop roll.
 {
     const {mapping, values, midiCalls} = load();
     mapping.init();
-    assert.equal(values.get("[EffectRack1_EffectUnit3],group_[Channel1]_enable"), 1);
-    assert.equal(values.get("[EffectRack1_EffectUnit3],group_[Channel2]_enable"), 0);
-    assert.equal(values.get("[EffectRack1_EffectUnit4],group_[Channel2]_enable"), 1);
-
-    mapping.beatFxBeat(0, 0x00, 0x60, 0xB4); // 0x60 -> index 6 = 4 beats
+    const unit = "[EffectRack1_EffectUnit1]";
+    mapping.beatFxBeat(0, 0x00, 0x7F, 0xB4); // BEAT fully right
     mapping.beatFxLevelMsb(0, 0x02, 0x40, 0xB4);
+    close(values.get("[RX3BeatFx],amount"), 0x40 * 128 / 16383);
+    midiCalls.length = 0;
     mapping.beatFxButton(0, 0x48, 0x7F, 0x94); // ECHO on deck 1
-    assert.equal(values.get("[EffectRack1_EffectUnit3],loaded_chain_preset"), 3);
-    assert.equal(values.get("[EffectRack1_EffectUnit3],enabled"), 1);
-    close(values.get("[EffectRack1_EffectUnit3],mix"), 0x40 * 128 / 16383);
-    assert.equal(values.get("[EffectRack1_EffectUnit3_Effect1],parameter1"), 4, "echo delay in beats");
-    assert.ok(midiCalls.some(c => c[0] === 0x94 && c[1] === 0x48 && c[2] === 0x7F), "ECHO lit");
-
-    mapping.beatFxButton(0, 0x46, 0x7F, 0x95); // TRANS on deck 2
-    assert.equal(values.get("[EffectRack1_EffectUnit4],loaded_chain_preset"), 1);
-    assert.equal(values.get("[EffectRack1_EffectUnit4_Effect1],parameter2"), 1, "tremolo rate");
-
-    mapping.beatFxButton(0, 0x49, 0x7F, 0x94); // ROLL on deck 1
-    assert.equal(values.get("[EffectRack1_EffectUnit3],enabled"), 0);
-    assert.equal(values.get("[Channel1],beatlooproll_4_activate"), 1);
+    assert.equal(mapping.unitFx, 1, "ECHO = fixed 1");
+    assert.equal(values.get(`${unit},group_[Channel1]_enable`), 1);
+    assert.equal(values.get(`${unit},group_[Channel2]_enable`) || 0, 0);
+    assert.equal(values.get(`${unit},group_[Master]_enable`) || 0, 0);
+    assert.equal(values.get(`${unit},enabled`), 1);
+    assert.equal(values.get("[EffectRack1_EffectUnit1_Effect1],enabled"), 1);
+    assert.equal(values.get("[RX3SidePanel],beatfx"), 1, "BEAT FX panel shown");
+    assert.ok(values.get("[RX3BeatFx],xpad_position") > 0.99, "BEAT moves the X-PAD");
+    assert.deepEqual(midiCalls.filter((m) => m[0] === 0x94 && m[1] === 0x48).pop(), [0x94, 0x48, 0x7F]);
+    // ECHO on deck 2 too: same effect, both decks.
+    mapping.beatFxButton(0, 0x48, 0x7F, 0x95);
+    assert.equal(values.get(`${unit},group_[Channel1]_enable`), 1);
+    assert.equal(values.get(`${unit},group_[Channel2]_enable`), 1);
+    // TRANS on deck 2: a different effect moves to deck 2 alone.
+    mapping.beatFxButton(0, 0x46, 0x7F, 0x95);
+    assert.equal(mapping.unitFx, 7, "TRANS = tremolo, fixed 7");
+    assert.equal(values.get(`${unit},group_[Channel1]_enable`), 0);
+    assert.equal(values.get(`${unit},group_[Channel2]_enable`), 1);
+    // Pressing the lit TRANS again turns the effect off.
+    mapping.beatFxButton(0, 0x46, 0x7F, 0x95);
+    assert.equal(values.get(`${unit},group_[Channel2]_enable`), 0);
+    assert.equal(values.get(`${unit},enabled`), 0);
+    // ROLL: loop roll at the BEAT size; SHIFT + ROLL again turns it off.
     mapping.beatFxBeat(0, 0x00, 0x00, 0xB4); // 1/16 beat
-    assert.equal(values.get("[Channel1],beatlooproll_4_activate"), 0);
-    assert.equal(values.get("[Channel1],beatlooproll_0.0625_activate"), 1);
-    mapping.beatFxButton(0, 0x65, 0x7F, 0x94); // SHIFT + ROLL again = off
-    assert.equal(values.get("[Channel1],beatlooproll_0.0625_activate"), 0);
-    assert.equal(mapping.beatFxSelected[1], 0);
-    assert.equal(values.get("[EffectRack1_EffectUnit4],enabled"), 1, "deck 2 FX unaffected");
+    mapping.beatFxButton(0, 0x49, 0x7F, 0x94);
+    assert.equal(values.get(`[Channel1],beatlooproll_${1 / 16}_activate`), 1);
+    mapping.beatFxButton(0, 0x65, 0x7F, 0x94);
+    assert.equal(values.get(`[Channel1],beatlooproll_${1 / 16}_activate`), 0);
+    assert.equal(mapping.rollOn[1], false);
+}
+
+// PLAY acts on press; during a cue preview it latches play (CDJ behaviour).
+{
+    const {mapping, values} = load();
+    values.set("[Channel1],track_loaded", 1);
+    values.set("[Channel1],cue_point", 1000);
+    mapping.CueDecks(0, 0x0C, 0x7F, 0x90, "[Channel1]");
+    assert.equal(values.get("[Channel1],cue_default"), 1);
+    values.set("[Channel1],play", 1); // the engine plays the cue preview
+    mapping.PlayDecks(0, 0x0B, 0x7F, 0x90, "[Channel1]");
+    assert.equal(values.get("[Channel1],play"), 0, "toggle request latches play in Mixxx");
+    mapping.PlayDecks(0, 0x0B, 0x00, 0x90, "[Channel1]");
+    assert.equal(values.get("[Channel1],play"), 0, "release does nothing");
+    mapping.CueDecks(0, 0x0C, 0x00, 0x90, "[Channel1]");
+    assert.equal(values.get("[Channel1],cue_default"), 0);
+    // No cue point: CUE sets one instead of doing nothing.
+    values.set("[Channel1],cue_point", -1);
+    mapping.CueDecks(0, 0x0C, 0x7F, 0x90, "[Channel1]");
+    assert.equal(values.get("[Channel1],cue_set"), 0);
+    assert.equal(values.get("[Channel1],cue_default"), 0);
+}
+
+// SHIFT + MASTER TEMPO toggles quantize on both decks and sends no light.
+{
+    const {mapping, values, midiCalls} = load();
+    values.set("[Channel1],keylock", 1);
+    values.set("[Channel1],quantize", 1);
+    values.set("[Channel2],quantize", 1);
+    midiCalls.length = 0;
+    mapping.quantizeButton(0, 0x56, 0x7F, 0x90, "[Channel1]");
+    assert.equal(values.get("[Channel1],quantize"), 0);
+    assert.equal(values.get("[Channel2],quantize"), 0);
+    mapping.quantizeButton(0, 0x56, 0x00, 0x90, "[Channel1]");
+    mapping.quantizeButton(0, 0x56, 0x7F, 0x90, "[Channel1]");
+    assert.equal(values.get("[Channel1],quantize"), 1);
+    assert.equal(midiCalls.length, 0, "MASTER TEMPO lamp untouched");
+    assert.equal(values.get("[Channel1],keylock"), 1);
+}
+
+// TIME in BROWSE pulses the MATCH filter.
+{
+    const {mapping, browser, values} = load();
+    const seen = [];
+    const engineSet = values.set.bind(values);
+    values.set = (k, v) => { if (k === "[RX3Browser],match_master") seen.push(v); return engineSet(k, v); };
+    browser.isOpen = () => false;
+    mapping.matchButton(0, 0x3E, 0x7F, 0x90);
+    assert.deepEqual(seen, []);
+    browser.isOpen = () => true;
+    mapping.matchButton(0, 0x3E, 0x7F, 0x90);
+    assert.deepEqual(seen, [1, 0]);
 }
 
 // XML: every script binding exists, and the addresses come from the manual.
@@ -359,6 +419,8 @@ function engine_set(values, _mapping, group, key, value) { values.set(`${group},
     has("0xB5", "0x00", "PioneerXDJR1.beatFxBeat");
     has("0xB4", "0x02", "PioneerXDJR1.beatFxLevelMsb");
     has("0x91", "0x42", "PioneerXDJR1.selectPress");
+    has("0x90", "0x56", "PioneerXDJR1.quantizeButton");
+    has("0x91", "0x3E", "PioneerXDJR1.matchButton");
     has("0xB0", "0x40", "PioneerXDJR1.selectTurn");
     has("0xB1", "0x41", "PioneerXDJR1.selectTurn");
     for (const chain of ["RX3 PITCH.xml", "RX3 CRUSH.xml", "XDJ-R1 TRANS.xml",

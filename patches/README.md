@@ -1,5 +1,15 @@
 # NauticMixxx native patches
 
+## 0046 — XDJ-R1 MATCH filter and fixed Beat FX selection
+
+Adds `[RX3Browser],match_master`. On a USB track list it keeps the tracks in a
+key compatible with the master deck's current key and within 16% of its
+current tempo, in list order; pressing it again restores the list.
+`[RX3Browser],match_master_active` reports the state. Beat FX gains
+`[RX3BeatFx],select_fixed` and `selected_fixed`, which number the eight Beat FX
+processors in a fixed order (1 ECHO, 2 REVERB, 3 FLANGER, 4 PHASER, 5 FILTER,
+6 PITCH SHIFT, 7 TREMOLO, 8 GLITCH) independent of display language.
+
 ## 0045 — Browser KEY column and larger track text
 
 Adds a KEY column to both RX3 track-list layouts (normal and expanded). The

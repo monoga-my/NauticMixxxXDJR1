@@ -84,6 +84,8 @@ for deck in (1, 2):
     script(channel, "Sync", note, 0x58, "SYNC (stays on; lit while on)")
     script(channel, "Master", note, 0x59, "MASTER: make this deck the sync leader")
     script(channel, "MasterTempo", note, 0x1A, "MASTER TEMPO (keylock)")
+    script(channel, "quantizeButton", note, 0x56,
+           "SHIFT + MASTER TEMPO: quantize on/off (both decks; lamp keeps showing keylock)")
 
     comment(f"Deck {deck} tempo")
     script(channel, "tempoMsb", cc, 0x00, "TEMPO slider (MSB)")
@@ -142,6 +144,8 @@ for deck in (1, 2):
             "BACK: browser back one level", SCRIPT)
     control("[Library]", "NauticRX3Browser.view", note, 0x45,
             "SHIFT + BACK: VIEW (PERFORMANCE / BROWSE)", SCRIPT)
+    script("[Library]", "matchButton", note, 0x3E,
+           "TIME in BROWSE: MATCH filter (master deck key, tempo within 16%)")
     control("[Library]", "NauticRX3Browser.source", note, 0x3F,
             "SHIFT + TIME: SOURCE", SCRIPT)
 

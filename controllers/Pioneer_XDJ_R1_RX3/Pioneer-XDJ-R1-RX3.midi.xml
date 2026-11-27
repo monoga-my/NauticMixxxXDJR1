@@ -398,6 +398,16 @@
                     <script-binding/>
                 </options>
             </control>
+            <control>
+                <description>SHIFT + MASTER TEMPO: quantize on/off (both decks; lamp keeps showing keylock)</description>
+                <group>[Channel1]</group>
+                <key>PioneerXDJR1.quantizeButton</key>
+                <status>0x90</status>
+                <midino>0x56</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
             <!-- Deck 1 tempo -->
             <control>
                 <description>TEMPO slider (MSB)</description>
@@ -935,6 +945,16 @@
                 </options>
             </control>
             <control>
+                <description>TIME in BROWSE: MATCH filter (master deck key, tempo within 16%)</description>
+                <group>[Library]</group>
+                <key>PioneerXDJR1.matchButton</key>
+                <status>0x90</status>
+                <midino>0x3E</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
                 <description>SHIFT + TIME: SOURCE</description>
                 <group>[Library]</group>
                 <key>NauticRX3Browser.source</key>
@@ -1021,6 +1041,16 @@
                 <key>PioneerXDJR1.MasterTempo</key>
                 <status>0x91</status>
                 <midino>0x1A</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <description>SHIFT + MASTER TEMPO: quantize on/off (both decks; lamp keeps showing keylock)</description>
+                <group>[Channel2]</group>
+                <key>PioneerXDJR1.quantizeButton</key>
+                <status>0x91</status>
+                <midino>0x56</midino>
                 <options>
                     <script-binding/>
                 </options>
@@ -1557,6 +1587,16 @@
                 <key>NauticRX3Browser.view</key>
                 <status>0x91</status>
                 <midino>0x45</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <description>TIME in BROWSE: MATCH filter (master deck key, tempo within 16%)</description>
+                <group>[Library]</group>
+                <key>PioneerXDJR1.matchButton</key>
+                <status>0x91</status>
+                <midino>0x3E</midino>
                 <options>
                     <script-binding/>
                 </options>
