@@ -41,6 +41,7 @@ Section "NauticMixxx" MainSection
   File /r "${PAYLOAD}\controllers\Pioneer_DDJ_FLX4_RX3\*"
   File /r "${PAYLOAD}\controllers\Pioneer_DDJ_FLX6_RX3\*"
   File /r "${PAYLOAD}\controllers\Pioneer_Roland_RX3\*"
+  File /r "${PAYLOAD}\controllers\Pioneer_XDJ_R1_RX3\*"
   SetOutPath "$LOCALAPPDATA\NauticMixxx\effects\chains"
   File /r "${PAYLOAD}\effects\chains\*"
   InitPluginsDir

@@ -37,12 +37,17 @@ OPTIONAL_CONTROLLER_FILES = (
     "Pioneer-DDJ-WeGO3-scripts.js",
     "Roland_DJ-505-scripts.js",
     "lodash.mixxx.js",
+    "Pioneer-XDJ-R1-RX3.midi.xml",
+    "Pioneer-XDJ-R1-RX3-scripts.js",
+    "Nautic-RX3-Encoder-Pioneer-Roland.js",
 )
 EFFECT_CHAIN_FILES = (
     "RX3 REVERB.xml",
     "RX3 PING PONG.xml",
     "RX3 NOISE.xml",
     "RX3 FILTER.xml",
+    "RX3 PITCH.xml",
+    "RX3 CRUSH.xml",
 )
 LEGACY_EFFECT_CHAIN_FILES = ("RX3 SPACE.xml", "RX3 DUB ECHO.xml")
 QUICK_EFFECT_PRESETS = (
@@ -50,6 +55,8 @@ QUICK_EFFECT_PRESETS = (
     "RX3 PING PONG",
     "RX3 NOISE",
     "RX3 FILTER",
+    "RX3 PITCH",
+    "RX3 CRUSH",
 )
 LEGACY_QUICK_EFFECT_PRESETS = ("RX3 SPACE", "RX3 DUB ECHO")
 MANAGED_SECTIONS = (

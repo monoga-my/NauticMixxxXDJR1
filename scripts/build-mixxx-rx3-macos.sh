@@ -68,6 +68,7 @@ ditto "$project/controllers/Hercules_DJControl_Inpulse_500_RX3" "$app/Contents/R
 ditto "$project/controllers/Pioneer_DDJ_FLX4_RX3" "$app/Contents/Resources/controllers"
 ditto "$project/controllers/Pioneer_DDJ_FLX6_RX3" "$app/Contents/Resources/controllers"
 ditto "$project/controllers/Pioneer_Roland_RX3" "$app/Contents/Resources/controllers"
+ditto "$project/controllers/Pioneer_XDJ_R1_RX3" "$app/Contents/Resources/controllers"
 mkdir -p "$app/Contents/Resources/effects/chains" "$app/Contents/Resources/licenses"
 ditto "$project/effects/chains" "$app/Contents/Resources/effects/chains"
 cp "$project/skins/XDJ_RX3_Mixxx/LICENSE" "$app/Contents/Resources/licenses/NauticMixxx-GPL-3.0.txt"

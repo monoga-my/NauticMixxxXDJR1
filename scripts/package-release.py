@@ -195,6 +195,7 @@ def prepare_app(source_app: Path, target_app: Path) -> None:
     copy_tree(ROOT / "controllers/Pioneer_DDJ_FLX6_RX3", resources / "controllers")
     copy_tree(ROOT / "controllers/Pioneer_DDJ_FLX4_RX3", resources / "controllers")
     copy_tree(ROOT / "controllers/Pioneer_Roland_RX3", resources / "controllers")
+    copy_tree(ROOT / "controllers/Pioneer_XDJ_R1_RX3", resources / "controllers")
     copy_tree(ROOT / "effects/chains", resources / "effects/chains")
     profiles = resources / "profiles"
     profiles.mkdir(parents=True, exist_ok=True)

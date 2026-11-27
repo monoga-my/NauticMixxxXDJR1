@@ -1,0 +1,786 @@
+<?xml version="1.0" encoding="utf-8"?>
+<MixxxControllerPreset mixxxVersion="2.5.0+" schemaVersion="1">
+    <info>
+        <name>Pioneer XDJ-R1 (NauticMixxx RX3)</name>
+        <author>Helton Lidio; NauticMixxx XDJ-R1 adaptation</author>
+        <description>Pioneer XDJ-R1 in MIDI mode, 2 decks on MIDI channels 1 and 2. Adds 14-bit tempo with correct direction, TEMPO RANGE, SOUND COLOR FX and COLOR, and the NauticMixxx RX3 browser.</description>
+        <forums>https://github.com/nauticsoftware/NauticMixxx/issues</forums>
+    </info>
+    <controller id="XDJ-R1">
+        <scriptfiles>
+            <file functionprefix="PioneerXDJR1" filename="Pioneer-XDJ-R1-RX3-scripts.js"/>
+            <file functionprefix="NauticRX3Browser" filename="Nautic-RX3-Browser.js"/>
+            <file functionprefix="NauticRX3Encoder" filename="Nautic-RX3-Encoder-Pioneer-Roland.js"/>
+        </scriptfiles>
+        <controls>
+            <!-- Mixer (MIDI channel 7) -->
+            <control>
+                <description>MASTER LEVEL</description>
+                <group>[Master]</group>
+                <key>volume</key>
+                <status>0xB6</status>
+                <midino>0x00</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <description>HEADPHONES MIXING</description>
+                <group>[Master]</group>
+                <key>headMix</key>
+                <status>0xB6</status>
+                <midino>0x01</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <description>HEADPHONES LEVEL</description>
+                <group>[Master]</group>
+                <key>headGain</key>
+                <status>0xB6</status>
+                <midino>0x02</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <description>Crossfader</description>
+                <group>[Master]</group>
+                <key>crossfader</key>
+                <status>0xB6</status>
+                <midino>0x1F</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <description>MIC LEVEL</description>
+                <group>[Microphone]</group>
+                <key>volume</key>
+                <status>0xB6</status>
+                <midino>0x14</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <description>MIC ON/OFF</description>
+                <group>[Microphone]</group>
+                <key>talkover</key>
+                <status>0x96</status>
+                <midino>0x46</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <description>TRIM deck 1</description>
+                <group>[Channel1]</group>
+                <key>pregain</key>
+                <status>0xB6</status>
+                <midino>0x03</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <description>EQ HI deck 1</description>
+                <group>[EqualizerRack1_[Channel1]_Effect1]</group>
+                <key>parameter3</key>
+                <status>0xB6</status>
+                <midino>0x07</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <description>EQ MID deck 1</description>
+                <group>[EqualizerRack1_[Channel1]_Effect1]</group>
+                <key>parameter2</key>
+                <status>0xB6</status>
+                <midino>0x0B</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <description>EQ LOW deck 1</description>
+                <group>[EqualizerRack1_[Channel1]_Effect1]</group>
+                <key>parameter1</key>
+                <status>0xB6</status>
+                <midino>0x0F</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <description>Channel fader deck 1</description>
+                <group>[Channel1]</group>
+                <key>volume</key>
+                <status>0xB6</status>
+                <midino>0x13</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <description>HEADPHONES CUE deck 1</description>
+                <group>[Channel1]</group>
+                <key>PioneerXDJR1.toggleHeadphone</key>
+                <status>0x96</status>
+                <midino>0x54</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <description>TRIM deck 2</description>
+                <group>[Channel2]</group>
+                <key>pregain</key>
+                <status>0xB6</status>
+                <midino>0x04</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <description>EQ HI deck 2</description>
+                <group>[EqualizerRack1_[Channel2]_Effect1]</group>
+                <key>parameter3</key>
+                <status>0xB6</status>
+                <midino>0x08</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <description>EQ MID deck 2</description>
+                <group>[EqualizerRack1_[Channel2]_Effect1]</group>
+                <key>parameter2</key>
+                <status>0xB6</status>
+                <midino>0x0C</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <description>EQ LOW deck 2</description>
+                <group>[EqualizerRack1_[Channel2]_Effect1]</group>
+                <key>parameter1</key>
+                <status>0xB6</status>
+                <midino>0x10</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <description>Channel fader deck 2</description>
+                <group>[Channel2]</group>
+                <key>volume</key>
+                <status>0xB6</status>
+                <midino>0x15</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <description>HEADPHONES CUE deck 2</description>
+                <group>[Channel2]</group>
+                <key>PioneerXDJR1.toggleHeadphone</key>
+                <status>0x96</status>
+                <midino>0x55</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <!-- COLOR knobs (14-bit) drive the selected Sound Color FX -->
+            <control>
+                <description>COLOR deck 1 (MSB)</description>
+                <group>[QuickEffectRack1_[Channel1]]</group>
+                <key>PioneerXDJR1.colorMsb</key>
+                <status>0xB6</status>
+                <midino>0x1B</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <description>COLOR deck 1 (LSB)</description>
+                <group>[QuickEffectRack1_[Channel1]]</group>
+                <key>PioneerXDJR1.colorLsb</key>
+                <status>0xB6</status>
+                <midino>0x3B</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <description>COLOR deck 2 (MSB)</description>
+                <group>[QuickEffectRack1_[Channel2]]</group>
+                <key>PioneerXDJR1.colorMsb</key>
+                <status>0xB6</status>
+                <midino>0x1C</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <description>COLOR deck 2 (LSB)</description>
+                <group>[QuickEffectRack1_[Channel2]]</group>
+                <key>PioneerXDJR1.colorLsb</key>
+                <status>0xB6</status>
+                <midino>0x3C</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <!-- SOUND COLOR FX buttons (MIDI channel 5); SHIFT variants behave the same -->
+            <control>
+                <description>SOUND COLOR FX FILTER</description>
+                <group>[QuickEffectRack1_[Channel1]]</group>
+                <key>PioneerXDJR1.soundColorFxButton</key>
+                <status>0x94</status>
+                <midino>0x4E</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <description>SHIFT + SOUND COLOR FX FILTER</description>
+                <group>[QuickEffectRack1_[Channel1]]</group>
+                <key>PioneerXDJR1.soundColorFxButton</key>
+                <status>0x94</status>
+                <midino>0x6A</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <description>SOUND COLOR FX PITCH</description>
+                <group>[QuickEffectRack1_[Channel1]]</group>
+                <key>PioneerXDJR1.soundColorFxButton</key>
+                <status>0x94</status>
+                <midino>0x4F</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <description>SHIFT + SOUND COLOR FX PITCH</description>
+                <group>[QuickEffectRack1_[Channel1]]</group>
+                <key>PioneerXDJR1.soundColorFxButton</key>
+                <status>0x94</status>
+                <midino>0x6B</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <description>SOUND COLOR FX CRUSH</description>
+                <group>[QuickEffectRack1_[Channel1]]</group>
+                <key>PioneerXDJR1.soundColorFxButton</key>
+                <status>0x94</status>
+                <midino>0x50</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <description>SHIFT + SOUND COLOR FX CRUSH</description>
+                <group>[QuickEffectRack1_[Channel1]]</group>
+                <key>PioneerXDJR1.soundColorFxButton</key>
+                <status>0x94</status>
+                <midino>0x6C</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <description>SOUND COLOR FX NOISE</description>
+                <group>[QuickEffectRack1_[Channel1]]</group>
+                <key>PioneerXDJR1.soundColorFxButton</key>
+                <status>0x94</status>
+                <midino>0x51</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <description>SHIFT + SOUND COLOR FX NOISE</description>
+                <group>[QuickEffectRack1_[Channel1]]</group>
+                <key>PioneerXDJR1.soundColorFxButton</key>
+                <status>0x94</status>
+                <midino>0x6D</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <!-- Deck 1 (MIDI channel 1) -->
+            <control>
+                <description>PLAY/PAUSE</description>
+                <group>[Channel1]</group>
+                <key>PioneerXDJR1.PlayDecks</key>
+                <status>0x90</status>
+                <midino>0x0B</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <description>CUE</description>
+                <group>[Channel1]</group>
+                <key>PioneerXDJR1.CueDecks</key>
+                <status>0x90</status>
+                <midino>0x0C</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <description>SHIFT + CUE: clear cue point</description>
+                <group>[Channel1]</group>
+                <key>PioneerXDJR1.ClearCue</key>
+                <status>0x90</status>
+                <midino>0x48</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <description>TRACK SEARCH forward</description>
+                <group>[Channel1]</group>
+                <key>fwd</key>
+                <status>0x90</status>
+                <midino>0x09</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <description>TRACK SEARCH back</description>
+                <group>[Channel1]</group>
+                <key>back</key>
+                <status>0x90</status>
+                <midino>0x0A</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <description>SYNC</description>
+                <group>[Channel1]</group>
+                <key>PioneerXDJR1.Sync</key>
+                <status>0x90</status>
+                <midino>0x58</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <description>MASTER TEMPO (keylock)</description>
+                <group>[Channel1]</group>
+                <key>PioneerXDJR1.MasterTempo</key>
+                <status>0x90</status>
+                <midino>0x1A</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <description>TEMPO slider (MSB)</description>
+                <group>[Channel1]</group>
+                <key>PioneerXDJR1.tempoMsb</key>
+                <status>0xB0</status>
+                <midino>0x00</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <description>TEMPO slider (LSB)</description>
+                <group>[Channel1]</group>
+                <key>PioneerXDJR1.tempoLsb</key>
+                <status>0xB0</status>
+                <midino>0x20</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <description>TEMPO RANGE 6%</description>
+                <group>[Channel1]</group>
+                <key>PioneerXDJR1.tempoRange</key>
+                <status>0x90</status>
+                <midino>0x0E</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <description>TEMPO RANGE 10%</description>
+                <group>[Channel1]</group>
+                <key>PioneerXDJR1.tempoRange</key>
+                <status>0x90</status>
+                <midino>0x0F</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <description>TEMPO RANGE 16%</description>
+                <group>[Channel1]</group>
+                <key>PioneerXDJR1.tempoRange</key>
+                <status>0x90</status>
+                <midino>0x10</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <description>TEMPO RANGE WIDE</description>
+                <group>[Channel1]</group>
+                <key>PioneerXDJR1.tempoRange</key>
+                <status>0x90</status>
+                <midino>0x11</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <description>SHIFT + TEMPO RANGE</description>
+                <group>[Channel1]</group>
+                <key>PioneerXDJR1.tempoRange</key>
+                <status>0x90</status>
+                <midino>0x57</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <description>Jog dial (outer)</description>
+                <group>[Channel1]</group>
+                <key>PioneerXDJR1.jog_wheel</key>
+                <status>0xB0</status>
+                <midino>0x01</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <description>Jog dial (top)</description>
+                <group>[Channel1]</group>
+                <key>PioneerXDJR1.jog_wheel</key>
+                <status>0xB0</status>
+                <midino>0x02</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <!-- Browser, deck 1 side -->
+            <control>
+                <description>SELECT turn: NauticMixxx RX3 browser move</description>
+                <group>[Library]</group>
+                <key>NauticRX3Browser.turn</key>
+                <status>0xB0</status>
+                <midino>0x40</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <description>SHIFT + SELECT turn: browser move</description>
+                <group>[Library]</group>
+                <key>NauticRX3Browser.turn</key>
+                <status>0xB0</status>
+                <midino>0x41</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <description>SELECT press: open BROWSE / enter (hold 2 s: back)</description>
+                <group>[Library]</group>
+                <key>NauticRX3Browser.enter</key>
+                <status>0x90</status>
+                <midino>0x42</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <description>SHIFT + SELECT press: load selected track to deck 1</description>
+                <group>[Channel1]</group>
+                <key>PioneerXDJR1.loadTrack</key>
+                <status>0x90</status>
+                <midino>0x43</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <description>BACK: browser back one level</description>
+                <group>[Library]</group>
+                <key>NauticRX3Browser.back</key>
+                <status>0x90</status>
+                <midino>0x44</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <description>SHIFT + BACK: VIEW (PERFORMANCE / BROWSE)</description>
+                <group>[Library]</group>
+                <key>NauticRX3Browser.view</key>
+                <status>0x90</status>
+                <midino>0x45</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <description>SHIFT + TIME: SOURCE</description>
+                <group>[Library]</group>
+                <key>NauticRX3Browser.source</key>
+                <status>0x90</status>
+                <midino>0x3F</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <!-- Deck 2 (MIDI channel 2) -->
+            <control>
+                <description>PLAY/PAUSE</description>
+                <group>[Channel2]</group>
+                <key>PioneerXDJR1.PlayDecks</key>
+                <status>0x91</status>
+                <midino>0x0B</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <description>CUE</description>
+                <group>[Channel2]</group>
+                <key>PioneerXDJR1.CueDecks</key>
+                <status>0x91</status>
+                <midino>0x0C</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <description>SHIFT + CUE: clear cue point</description>
+                <group>[Channel2]</group>
+                <key>PioneerXDJR1.ClearCue</key>
+                <status>0x91</status>
+                <midino>0x48</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <description>TRACK SEARCH forward</description>
+                <group>[Channel2]</group>
+                <key>fwd</key>
+                <status>0x91</status>
+                <midino>0x09</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <description>TRACK SEARCH back</description>
+                <group>[Channel2]</group>
+                <key>back</key>
+                <status>0x91</status>
+                <midino>0x0A</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <description>SYNC</description>
+                <group>[Channel2]</group>
+                <key>PioneerXDJR1.Sync</key>
+                <status>0x91</status>
+                <midino>0x58</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <description>MASTER TEMPO (keylock)</description>
+                <group>[Channel2]</group>
+                <key>PioneerXDJR1.MasterTempo</key>
+                <status>0x91</status>
+                <midino>0x1A</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <description>TEMPO slider (MSB)</description>
+                <group>[Channel2]</group>
+                <key>PioneerXDJR1.tempoMsb</key>
+                <status>0xB1</status>
+                <midino>0x00</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <description>TEMPO slider (LSB)</description>
+                <group>[Channel2]</group>
+                <key>PioneerXDJR1.tempoLsb</key>
+                <status>0xB1</status>
+                <midino>0x20</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <description>TEMPO RANGE 6%</description>
+                <group>[Channel2]</group>
+                <key>PioneerXDJR1.tempoRange</key>
+                <status>0x91</status>
+                <midino>0x0E</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <description>TEMPO RANGE 10%</description>
+                <group>[Channel2]</group>
+                <key>PioneerXDJR1.tempoRange</key>
+                <status>0x91</status>
+                <midino>0x0F</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <description>TEMPO RANGE 16%</description>
+                <group>[Channel2]</group>
+                <key>PioneerXDJR1.tempoRange</key>
+                <status>0x91</status>
+                <midino>0x10</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <description>TEMPO RANGE WIDE</description>
+                <group>[Channel2]</group>
+                <key>PioneerXDJR1.tempoRange</key>
+                <status>0x91</status>
+                <midino>0x11</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <description>SHIFT + TEMPO RANGE</description>
+                <group>[Channel2]</group>
+                <key>PioneerXDJR1.tempoRange</key>
+                <status>0x91</status>
+                <midino>0x57</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <description>Jog dial (outer)</description>
+                <group>[Channel2]</group>
+                <key>PioneerXDJR1.jog_wheel</key>
+                <status>0xB1</status>
+                <midino>0x01</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <description>Jog dial (top)</description>
+                <group>[Channel2]</group>
+                <key>PioneerXDJR1.jog_wheel</key>
+                <status>0xB1</status>
+                <midino>0x02</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <!-- Browser, deck 2 side -->
+            <control>
+                <description>SELECT turn: NauticMixxx RX3 browser move</description>
+                <group>[Library]</group>
+                <key>NauticRX3Browser.turn</key>
+                <status>0xB1</status>
+                <midino>0x40</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <description>SHIFT + SELECT turn: browser move</description>
+                <group>[Library]</group>
+                <key>NauticRX3Browser.turn</key>
+                <status>0xB1</status>
+                <midino>0x41</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <description>SELECT press: open BROWSE / enter (hold 2 s: back)</description>
+                <group>[Library]</group>
+                <key>NauticRX3Browser.enter</key>
+                <status>0x91</status>
+                <midino>0x42</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <description>SHIFT + SELECT press: load selected track to deck 2</description>
+                <group>[Channel2]</group>
+                <key>PioneerXDJR1.loadTrack</key>
+                <status>0x91</status>
+                <midino>0x43</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <description>BACK: browser back one level</description>
+                <group>[Library]</group>
+                <key>NauticRX3Browser.back</key>
+                <status>0x91</status>
+                <midino>0x44</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <description>SHIFT + BACK: VIEW (PERFORMANCE / BROWSE)</description>
+                <group>[Library]</group>
+                <key>NauticRX3Browser.view</key>
+                <status>0x91</status>
+                <midino>0x45</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <description>SHIFT + TIME: SOURCE</description>
+                <group>[Library]</group>
+                <key>NauticRX3Browser.source</key>
+                <status>0x91</status>
+                <midino>0x3F</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+        </controls>
+        <outputs/>
+    </controller>
+</MixxxControllerPreset>

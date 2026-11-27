@@ -1,7 +1,7 @@
 diff --git a/src/controllers/controllermanager.cpp b/src/controllers/controllermanager.cpp
 --- a/src/controllers/controllermanager.cpp
 +++ b/src/controllers/controllermanager.cpp
-@@ -53,6 +53,33 @@
+@@ -53,6 +53,34 @@
  
  constexpr auto kInpulse500Rx3Mapping =
          "Hercules_DJControl_Inpulse_500_RX3.midi.xml";
@@ -24,6 +24,7 @@ diff --git a/src/controllers/controllermanager.cpp b/src/controllers/controllerm
 +            {"DDJ-WeGO3", "DDJ-WeGO3-Nautic-RX3.midi.xml"},
 +            {"DDJ-FLX4", "Pioneer-DDJ-FLX4-RX3.midi.xml"},
 +            {"DJ-505", "DJ-505-Nautic-RX3.midi.xml"},
++            {"XDJ-R1", "Pioneer-XDJ-R1-RX3.midi.xml"},
 +    };
 +    for (const auto& mapping : mappings) {
 +        if (deviceName.contains(QString::fromLatin1(mapping.model), Qt::CaseInsensitive)) {
@@ -35,7 +36,7 @@ diff --git a/src/controllers/controllermanager.cpp b/src/controllers/controllerm
  
  bool mappingHasExactMidiId(const QString& path, const QString& deviceName) {
      QFile file(path);
-@@ -291,15 +318,16 @@
+@@ -291,15 +319,16 @@
          QString deviceName = sanitizeDeviceName(name);
  
          QString automaticMapping;

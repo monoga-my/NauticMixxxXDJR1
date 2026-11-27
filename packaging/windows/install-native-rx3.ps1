@@ -232,6 +232,8 @@ try {
         Copy-Item -Destination $controllers -Force
     Get-ChildItem (Join-Path $PSScriptRoot 'controllers\Pioneer_Roland_RX3') -File |
         Copy-Item -Destination $controllers -Force
+    Get-ChildItem (Join-Path $PSScriptRoot 'controllers\Pioneer_XDJ_R1_RX3') -File |
+        Copy-Item -Destination $controllers -Force
     foreach ($legacyMapping in @('Hercules_DJControl_Inpulse_500.midi.xml', 'Hercules-DJControl-Inpulse-500-script.js')) {
         $legacyPath = Join-Path $controllers $legacyMapping
         if (Test-Path -LiteralPath $legacyPath -PathType Leaf) {

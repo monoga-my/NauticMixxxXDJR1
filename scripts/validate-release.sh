@@ -19,7 +19,7 @@ else
 fi
 
 printf '%s\n' '4/6 XML de skin, mapping y efectos'
-find skins/XDJ_RX3_Mixxx controllers/Hercules_DJControl_Inpulse_500_RX3 controllers/Pioneer_DDJ_FLX4_RX3 controllers/Pioneer_DDJ_FLX6_RX3 controllers/Pioneer_Roland_RX3 effects \
+find skins/XDJ_RX3_Mixxx controllers/Hercules_DJControl_Inpulse_500_RX3 controllers/Pioneer_DDJ_FLX4_RX3 controllers/Pioneer_DDJ_FLX6_RX3 controllers/Pioneer_Roland_RX3 controllers/Pioneer_XDJ_R1_RX3 effects \
   -type f -name '*.xml' -exec xmllint --noout {} +
 
 printf '%s\n' '5/6 JavaScript del controlador'
@@ -27,6 +27,7 @@ node --check controllers/Hercules_DJControl_Inpulse_500_RX3/Hercules-DJControl-I
 node scripts/test-rx3-autoloop.js
 node scripts/test-rx3-loop-adjust.js
 node scripts/test-rx3-sound-color-fx.js
+node scripts/test-xdj-r1-preset.js
 node scripts/test-rx3-transport-controls.js
 node scripts/test-rx3-jog-bend.js
 node scripts/test-rx3-browser-exit.js

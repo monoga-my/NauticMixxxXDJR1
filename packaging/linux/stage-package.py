@@ -23,7 +23,7 @@ def stage(prefix: Path, source: Path, project: Path) -> None:
     shutil.copy2(project / 'packaging/linux/launch.py', binary.parent / 'launch.py')
     shutil.copytree(project / 'skins/XDJ_RX3_Mixxx', resources / 'skins/XDJ_RX3_Mixxx', dirs_exist_ok=True)
     for name in ('Hercules_DJControl_Inpulse_500_RX3', 'Pioneer_DDJ_FLX4_RX3',
-                 'Pioneer_DDJ_FLX6_RX3', 'Pioneer_Roland_RX3'):
+                 'Pioneer_DDJ_FLX6_RX3', 'Pioneer_Roland_RX3', 'Pioneer_XDJ_R1_RX3'):
         shutil.copytree(project / 'controllers' / name, resources / 'controllers', dirs_exist_ok=True)
     shutil.copytree(project / 'effects/chains', resources / 'effects/chains', dirs_exist_ok=True)
     (resources / 'profiles').mkdir(exist_ok=True)

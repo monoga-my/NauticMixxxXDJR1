@@ -23,6 +23,7 @@ ditto "$project/controllers/Hercules_DJControl_Inpulse_500_RX3" "$resources/cont
 ditto "$project/controllers/Pioneer_DDJ_FLX6_RX3" "$resources/controllers"
 ditto "$project/controllers/Pioneer_DDJ_FLX4_RX3" "$resources/controllers"
 ditto "$project/controllers/Pioneer_Roland_RX3" "$resources/controllers"
+ditto "$project/controllers/Pioneer_XDJ_R1_RX3" "$resources/controllers"
 mkdir -p "$resources/profiles" "$resources/effects/chains" "$resources/licenses"
 cp "$project/profile/XDJ_RX3_Mixxx.profile.cfg" "$resources/profiles/"
 ditto "$project/effects/chains" "$resources/effects/chains"

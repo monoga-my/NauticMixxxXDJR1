@@ -477,7 +477,7 @@ function Set-Rx3QuickEffectOrder {
         [void]$root.AppendChild($presetList)
     }
 
-    $rx3Presets = @("RX3 REVERB", "RX3 PING PONG", "RX3 NOISE", "RX3 FILTER")
+    $rx3Presets = @("RX3 REVERB", "RX3 PING PONG", "RX3 NOISE", "RX3 FILTER", "RX3 PITCH", "RX3 CRUSH")
     $legacyRx3Presets = @("RX3 SPACE", "RX3 DUB ECHO")
     $existingNodes = @($presetList.SelectNodes("ChainPresetName"))
     foreach ($node in $existingNodes) {

@@ -78,7 +78,7 @@ Other_MIDI_Device 1
     Set-Rx3QuickEffectOrder -EffectsConfig $effects
     [xml]$xml = Get-Content $effects -Raw
     $order = @($xml.DocumentElement.QuickEffectPresetList.ChainPresetName)
-    Assert-Rx3 (($order -join ',') -eq 'RX3 REVERB,RX3 PING PONG,RX3 NOISE,RX3 FILTER,Réverbération personal') "FX ordering preserves user presets without duplicates"
+    Assert-Rx3 (($order -join ',') -eq 'RX3 REVERB,RX3 PING PONG,RX3 NOISE,RX3 FILTER,RX3 PITCH,RX3 CRUSH,Réverbération personal') "FX ordering preserves user presets without duplicates"
     Assert-Rx3 ($xml.DocumentElement.OtherNode.value -eq "keep") "Unrelated effects configuration preserved"
 
     # Stub process startup to verify custom profile paths without launching apps.

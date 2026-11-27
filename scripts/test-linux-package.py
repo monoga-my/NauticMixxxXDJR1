@@ -43,7 +43,7 @@ with tempfile.TemporaryDirectory() as directory:
     assert 'UsbOnlyMode 1' in cfg.read_text()
     assert (profile / 'controllers/DDJ-SX3-Nautic-RX3.midi.xml').is_file()
     order = ET.parse(profile / 'effects.xml').findall('./QuickEffectPresetList/ChainPresetName')
-    assert [node.text for node in order] == ['RX3 REVERB', 'RX3 PING PONG', 'RX3 NOISE', 'RX3 FILTER']
+    assert [node.text for node in order] == ['RX3 REVERB', 'RX3 PING PONG', 'RX3 NOISE', 'RX3 FILTER', 'RX3 PITCH', 'RX3 CRUSH']
     cfg.write_text(cfg.read_text() + '\n[Personal]\nKeepThisSetting 42\n')
     saved = cfg.read_bytes()
     launch.seed_profile(resources, profile)

@@ -66,6 +66,9 @@ by the Inpulse change.
 | DDJ-WeGO3 | B6/40 | 96/41 | 96/42 | 96/58 | 96/59 |
 | Roland DJ-505 | BF/00 and BF/01 | 9F/06 | 9F/07 | 9F/12 | 9F/1B |
 
+The Pioneer XDJ-R1 has its own preset, with Sound Color FX, COLOR, TEMPO
+RANGE and a 14-bit tempo slider. See the [XDJ-R1 guide](XDJ-R1-EN.md).
+
 Addresses use hexadecimal status/control notation. DDJ-FLX4 details are in
 its [dedicated guide](DDJ-FLX4-EN.md). The optional FLX6 preset remains
 [browser-only](DDJ-FLX6-EN.md).

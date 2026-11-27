@@ -5,7 +5,7 @@ import hashlib
 import sys
 import xml.etree.ElementTree as ET
 root=Path(__file__).resolve().parents[1]
-folders=['Hercules_DJControl_Inpulse_500_RX3','Pioneer_DDJ_FLX4_RX3','Pioneer_DDJ_FLX6_RX3','Pioneer_Roland_RX3']
+folders=['Hercules_DJControl_Inpulse_500_RX3','Pioneer_DDJ_FLX4_RX3','Pioneer_DDJ_FLX6_RX3','Pioneer_Roland_RX3','Pioneer_XDJ_R1_RX3']
 files={}
 for folder in folders:
     for source in (root/'controllers'/folder).glob('*.js'):

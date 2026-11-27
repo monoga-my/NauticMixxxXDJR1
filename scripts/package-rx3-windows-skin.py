@@ -42,7 +42,7 @@ def package(output):
     )
     files_root = destination / 'NauticMixxx-Files'
     files_root.mkdir()
-    for directory in ('skins/XDJ_RX3_Mixxx', 'controllers/Hercules_DJControl_Inpulse_500_RX3', 'controllers/Pioneer_DDJ_FLX4_RX3', 'controllers/Pioneer_DDJ_FLX6_RX3', 'controllers/Pioneer_Roland_RX3', 'effects/chains'):
+    for directory in ('skins/XDJ_RX3_Mixxx', 'controllers/Hercules_DJControl_Inpulse_500_RX3', 'controllers/Pioneer_DDJ_FLX4_RX3', 'controllers/Pioneer_DDJ_FLX6_RX3', 'controllers/Pioneer_Roland_RX3', 'controllers/Pioneer_XDJ_R1_RX3', 'effects/chains'):
         shutil.copytree(ROOT / directory, files_root / directory,
                         ignore=shutil.ignore_patterns('.DS_Store', '__pycache__'))
     files = {

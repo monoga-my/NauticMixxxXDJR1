@@ -18,7 +18,7 @@ def seed_profile(resources: Path, profile: Path) -> None:
         shutil.copytree(resources / relative, profile / relative, dirs_exist_ok=True)
     root = ET.Element('Effects')
     presets = ET.SubElement(root, 'QuickEffectPresetList')
-    for name in ('RX3 REVERB', 'RX3 PING PONG', 'RX3 NOISE', 'RX3 FILTER'):
+    for name in ('RX3 REVERB', 'RX3 PING PONG', 'RX3 NOISE', 'RX3 FILTER', 'RX3 PITCH', 'RX3 CRUSH'):
         ET.SubElement(presets, 'ChainPresetName').text = name
     effects = profile / 'effects.xml'
     if not effects.exists():

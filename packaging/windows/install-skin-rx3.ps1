@@ -207,6 +207,8 @@ try {
         Copy-Item -Destination $controllers -Force
     Get-ChildItem -LiteralPath (Join-Path $PSScriptRoot 'controllers\Pioneer_Roland_RX3') -File |
         Copy-Item -Destination $controllers -Force
+    Get-ChildItem -LiteralPath (Join-Path $PSScriptRoot 'controllers\Pioneer_XDJ_R1_RX3') -File |
+        Copy-Item -Destination $controllers -Force
     Get-ChildItem -LiteralPath (Join-Path $PSScriptRoot 'effects\chains') -File |
         Copy-Item -Destination $chains -Force
     foreach ($legacyEffect in @('RX3 SPACE.xml', 'RX3 DUB ECHO.xml')) {

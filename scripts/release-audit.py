@@ -30,6 +30,7 @@ PUBLIC_INPUTS = [
     ROOT / "controllers/Pioneer_DDJ_FLX4_RX3",
     ROOT / "controllers/Pioneer_DDJ_FLX6_RX3",
     ROOT / "controllers/Pioneer_Roland_RX3",
+    ROOT / "controllers/Pioneer_XDJ_R1_RX3",
     ROOT / "vendor/controller-mappings",
     ROOT / "effects",
     ROOT / "branding/iCon-macOS-Dark-1024x1024@1x.png",

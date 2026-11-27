@@ -92,7 +92,9 @@ function Test-Rx3StandardProfile {
         'effects\chains\RX3 REVERB.xml',
         'effects\chains\RX3 PING PONG.xml',
         'effects\chains\RX3 NOISE.xml',
-        'effects\chains\RX3 FILTER.xml'
+        'effects\chains\RX3 FILTER.xml',
+        'effects\chains\RX3 PITCH.xml',
+        'effects\chains\RX3 CRUSH.xml'
     )) {
         if (Test-Path -LiteralPath (Join-Path $Profile $path)) { return $true }
     }
@@ -170,6 +172,8 @@ function Remove-Rx3StandardProfile {
         'effects\chains\RX3 PING PONG.xml',
         'effects\chains\RX3 NOISE.xml',
         'effects\chains\RX3 FILTER.xml',
+        'effects\chains\RX3 PITCH.xml',
+        'effects\chains\RX3 CRUSH.xml',
         'effects\chains\RX3 SPACE.xml',
         'effects\chains\RX3 DUB ECHO.xml'
     )) {

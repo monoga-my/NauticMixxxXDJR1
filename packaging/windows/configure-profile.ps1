@@ -71,7 +71,7 @@ try {
         $list = $xml.CreateElement('QuickEffectPresetList')
         [void]$xml.DocumentElement.AppendChild($list)
     }
-    $wanted = @('RX3 REVERB', 'RX3 PING PONG', 'RX3 NOISE', 'RX3 FILTER')
+    $wanted = @('RX3 REVERB', 'RX3 PING PONG', 'RX3 NOISE', 'RX3 FILTER', 'RX3 PITCH', 'RX3 CRUSH')
     foreach ($child in @($list.ChildNodes)) {
         if ($child.Name -eq 'ChainPresetName' -and
             ($wanted -contains $child.InnerText -or @('RX3 SPACE', 'RX3 DUB ECHO') -contains $child.InnerText)) {
