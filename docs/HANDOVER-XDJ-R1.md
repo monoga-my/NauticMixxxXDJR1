@@ -148,7 +148,7 @@ The patch-count checks were bumped 45 → 46.
 | Mids and highs only | SHIFT + TAP (94/95 0x74) toggles `[EffectRack1_EffectUnitN],rx3_keep_lows` (patch 0049: 250 Hz complementary split in `EngineEffectChain`) |
 | FX on screen for both decks | `xdj_fx_pane.xml` / `xdj_fx_row.xml`: DECK 1 FX and DECK 2 FX replace the touch BEAT FX panel when `[Skin],xdj_fx_panes` = 1 (set by the mapping) |
 | MODE did not return to hot cues | The unit sends MODE as a state (0x7F, then 0x00 on the next press). A 0x00 more than 400 ms after the 0x7F now toggles too |
-| Category rail too small | Patch 0049: 128 px rail, glass orb icons, larger bold labels, PLAY / LIST on two lines; rows already share the full height |
+| Category rail too small | Patch 0049: 128 px rail, glass orb icons, larger bold labels on one line; rows already share the full height |
 | Camelot keys | Patch 0049: Lancelot (= Camelot) notation set once; rekordbox key names converted in BROWSE, KEY category and INFO |
 
 Preview: [PERFORMANCE](aero-preview.png), [BROWSE](aero-preview-browse.png).

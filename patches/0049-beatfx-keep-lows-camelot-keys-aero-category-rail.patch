@@ -177,7 +177,7 @@ index c547764..b382a6e 100644
      QString getCustomKeyNotation(mixxx::track::io::key::ChromaticKey key) {
          return m_pConfig->getValue<QString>(ConfigKey(KEY_CONFIG_KEY,
 diff --git a/src/test/rx3display_test.cpp b/src/test/rx3display_test.cpp
-index 0199f6d..ab31f69 100644
+index 0199f6d..dacf4a9 100644
 --- a/src/test/rx3display_test.cpp
 +++ b/src/test/rx3display_test.cpp
 @@ -729,6 +729,21 @@ TEST(Rx3BrowserPlayback, PlayReplacesBothNoteAndHAtReferenceAndRetinaSizes) {
@@ -187,7 +187,7 @@ index 0199f6d..ab31f69 100644
 +#include "track/keyutils.h"
 +#include "widget/rx3browsernavigation.h"
 +TEST(Rx3BrowserPlayback, CategoryLabelsSplitLongNamesOverTwoLines) {
-+    EXPECT_EQ(QString("PLAY\nLIST"),rx3::browserCategoryLines("PLAYLIST"));
++    EXPECT_EQ(QString("PLAYLIST"),rx3::browserCategoryLines("PLAYLIST"));
 +    EXPECT_EQ(QString("DATE\nADDED"),rx3::browserCategoryLines("DATE ADDED"));
 +    EXPECT_EQ(QString("ARTIST"),rx3::browserCategoryLines("ARTIST"));
 +    EXPECT_NE(rx3::browserCategoryTint("ARTIST"),rx3::browserCategoryTint("ALBUM"));
@@ -203,17 +203,16 @@ index 0199f6d..ab31f69 100644
      const auto output=qEnvironmentVariable("NAUTIC_BROWSER_ARTIFACT_DIR");
      if (output.isEmpty()) return;
 diff --git a/src/widget/rx3browsericons.h b/src/widget/rx3browsericons.h
-index 2a2cc84..e869392 100644
+index 2a2cc84..8490525 100644
 --- a/src/widget/rx3browsericons.h
 +++ b/src/widget/rx3browsericons.h
-@@ -103,4 +103,40 @@ inline void drawBrowserCategoryIcon(QPainter* p, const QRectF& rect,
+@@ -103,4 +103,39 @@ inline void drawBrowserCategoryIcon(QPainter* p, const QRectF& rect,
      }
      p->restore();
  }
-+// Aero category label: long names on two lines (PLAY / LIST, DATE / ADDED).
++// Aero category label: one line, so icons and text match from row to row.
++// Only two-word names (DATE ADDED) wrap onto a second line.
 +inline QString browserCategoryLines(const QString& label) {
-+    if (label == "PLAYLIST") return QStringLiteral("PLAY\nLIST");
-+    if (label == "RECORDING") return QStringLiteral("RECORD\nING");
 +    if (label.contains(' ')) return label.section(' ', 0, 0) + "\n" + label.section(' ', 1);
 +    return label;
 +}

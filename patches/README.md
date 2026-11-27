@@ -12,8 +12,8 @@
   are converted on the BROWSE KEY column, the KEY category, its related keys
   and INFO (`rx3::displayKey`).
 - BROWSE category rail: 128 px wide, each category on a tinted glossy glass
-  orb, bold labels sized to the row, long names on two lines (PLAY / LIST,
-  DATE / ADDED). Tests cover the label split and Camelot numbering.
+  orb, bold one-line labels sized to the row (only two-word names such as
+  DATE ADDED wrap). Tests cover the labels and Camelot numbering.
 
 ## 0048 — Aero BROWSE and utility pages, ten-row browser
 
