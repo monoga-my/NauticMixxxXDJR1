@@ -5,9 +5,10 @@
 #
 # Close NauticMixxx first. The script copies the mapping, its shared RX3
 # browser scripts and the RX3 PITCH / RX3 CRUSH Sound Color FX chains into
-# %LOCALAPPDATA%\NauticMixxx, then puts the six RX3 Quick Effect presets at the
-# top of the Quick Effect list in the order the mapping expects:
-# REVERB, PING PONG, NOISE, FILTER, PITCH, CRUSH. Your other presets are kept.
+# %LOCALAPPDATA%\NauticMixxx, then puts the presets the mapping loads by
+# position at the top of Mixxx's lists: REVERB, PING PONG, NOISE, FILTER,
+# PITCH, CRUSH (Quick Effects) and XDJ-R1 TRANS, FLANGER, ECHO (effect chains).
+# Your other presets are kept.
 [CmdletBinding()]
 param(
     [string]$ProfileDir = (Join-Path $env:LOCALAPPDATA 'NauticMixxx')
@@ -29,8 +30,15 @@ foreach ($shared in 'Nautic-RX3-Browser.js', 'Nautic-RX3-Encoder-Pioneer-Roland.
     Copy-Item (Join-Path $projectRoot "controllers\Pioneer_Roland_RX3\$shared") $controllers -Force
 }
 foreach ($chain in 'RX3 REVERB.xml', 'RX3 PING PONG.xml', 'RX3 NOISE.xml', 'RX3 FILTER.xml',
-                   'RX3 PITCH.xml', 'RX3 CRUSH.xml') {
+                   'RX3 PITCH.xml', 'RX3 CRUSH.xml',
+                   'XDJ-R1 TRANS.xml', 'XDJ-R1 FLANGER.xml', 'XDJ-R1 ECHO.xml') {
     Copy-Item -LiteralPath (Join-Path $projectRoot "effects\chains\$chain") -Destination $chains -Force
+}
+
+# The skin's browser text uses Arial instead of the condensed Arial Narrow.
+$skin = Join-Path $ProfileDir 'skins\XDJ_RX3_Mixxx'
+if (Test-Path -LiteralPath $skin) {
+    Copy-Item -LiteralPath (Join-Path $projectRoot 'skins\XDJ_RX3_Mixxx\style.qss') -Destination $skin -Force
 }
 
 $effects = Join-Path $ProfileDir 'effects.xml'
@@ -40,24 +48,32 @@ if (Test-Path -LiteralPath $effects) {
     $xml.Load($effects)
 } else {
     [void]$xml.AppendChild($xml.CreateXmlDeclaration('1.0', 'utf-8', $null))
-    [void]$xml.AppendChild($xml.CreateElement('Effects'))
+    [void]$xml.AppendChild($xml.CreateElement('MixxxEffects'))
 }
-$list = $xml.DocumentElement.SelectSingleNode('QuickEffectPresetList')
-if ($null -eq $list) {
-    $list = $xml.CreateElement('QuickEffectPresetList')
-    [void]$xml.DocumentElement.AppendChild($list)
-}
-$wanted = @('RX3 REVERB', 'RX3 PING PONG', 'RX3 NOISE', 'RX3 FILTER', 'RX3 PITCH', 'RX3 CRUSH')
-foreach ($child in @($list.ChildNodes)) {
-    if ($child.Name -eq 'ChainPresetName' -and $wanted -contains $child.InnerText.Trim()) {
-        [void]$list.RemoveChild($child)
+function Set-PresetOrder($listName, [string[]]$wanted) {
+    # Mixxx lists only the presets named here, in this order, after the empty
+    # '---' preset at position 0. The mapping loads presets by that position.
+    $list = $xml.DocumentElement.SelectSingleNode($listName)
+    if ($null -eq $list) {
+        $list = $xml.CreateElement($listName)
+        [void]$xml.DocumentElement.AppendChild($list)
+    }
+    foreach ($child in @($list.ChildNodes)) {
+        if ($child.Name -eq 'ChainPresetName' -and $wanted -contains $child.InnerText.Trim()) {
+            [void]$list.RemoveChild($child)
+        }
+    }
+    for ($i = $wanted.Count - 1; $i -ge 0; $i--) {
+        $node = $xml.CreateElement('ChainPresetName')
+        $node.InnerText = $wanted[$i]
+        [void]$list.PrependChild($node)
     }
 }
-for ($i = $wanted.Count - 1; $i -ge 0; $i--) {
-    $node = $xml.CreateElement('ChainPresetName')
-    $node.InnerText = $wanted[$i]
-    [void]$list.PrependChild($node)
-}
+# Sound Color FX: positions 1-6 of the QuickEffect list.
+Set-PresetOrder 'QuickEffectPresetList' @('RX3 REVERB', 'RX3 PING PONG', 'RX3 NOISE',
+    'RX3 FILTER', 'RX3 PITCH', 'RX3 CRUSH')
+# Beat FX: positions 1-3 of the effect chain list (effect units 3 and 4).
+Set-PresetOrder 'ChainPresetList' @('XDJ-R1 TRANS', 'XDJ-R1 FLANGER', 'XDJ-R1 ECHO')
 $xml.Save($effects)
 
 Write-Host "XDJ-R1 preset installed in $controllers"

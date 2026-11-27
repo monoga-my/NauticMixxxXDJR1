@@ -3066,7 +3066,7 @@ WEffectSelector#RX3BeatFxSelector {
 /* Native RX3 browser: reference table, category rail and SOURCE page. */
 #RX3NativeBrowser, #RX3BrowserTracks, #RX3BrowserCategories, #RX3BrowserFolders { background: #000; color: #fff; border: 0; }
 #RX3BrowserHeader { background: #191919; border: 0; }
-#RX3BrowserHeader QLabel { font-family: "Arial Narrow"; font-size: 21px; color: #fff; background: transparent; }
+#RX3BrowserHeader QLabel { font-family: "Arial"; font-size: 21px; color: #fff; background: transparent; }
 #RX3BrowserHeader QPushButton { color: #ddd; background: #202020; border: 0; padding: 8px; font-size: 14px; }
 #RX3BrowserHeader QPushButton[active="true"] { border-top: 2px solid #008baa; color: #fff; }
 #RX3BrowserHeader QPushButton[encoderFocus="true"] { border: 1px solid white; color: #fff; }
@@ -3075,18 +3075,18 @@ WEffectSelector#RX3BeatFxSelector {
 #RX3BrowserCategories { font-family: "Arial"; font-size: 12px; outline: 0; }
 #RX3BrowserCategories::item { background: #202020; color: #fff; border: 0; padding: 0; }
 #RX3BrowserCategories::item:selected { background: #007CE0; border-left: 4px solid #fff; }
-#RX3BrowserFolders { alternate-background-color: #262626; font-family: "Arial Narrow"; font-size: 20px; outline: 0; }
+#RX3BrowserFolders { alternate-background-color: #262626; font-family: "Arial"; font-size: 20px; outline: 0; }
 #RX3BrowserFolders::item { height: 43px; padding: 0 7px; }
 #RX3BrowserFolders::item:selected { background: #007CE0; color: #fff; }
 #RX3PlaylistPreview { background: #000; color: #fff; }
-#RX3PlaylistPreviewHeader { background: #191919; color: #fff; border-bottom: 1px solid #008baa; font-family: "Arial Narrow"; font-size: 20px; padding-left: 14px; }
+#RX3PlaylistPreviewHeader { background: #191919; color: #fff; border-bottom: 1px solid #008baa; font-family: "Arial"; font-size: 20px; padding-left: 14px; }
 #RX3PlaylistPreviewTracks { background: #000; alternate-background-color: #262626; color: #fff; border: 0; font-family: "Arial"; font-size: 18px; }
 #RX3PlaylistPreviewTracks::item { border: 0; padding: 0 10px; }
 #RX3PlaylistPreviewTracks QHeaderView::section { background: #303030; color: #b7b7b7; border: 0; border-right: 1px solid #101010; font-family: "Arial"; font-size: 15px; padding-left: 10px; }
 #RX3PlaylistPreviewMessage { background: #000; color: #aab2b8; font-family: "Arial"; font-size: 18px; }
 #RX3BrowserTracks QTableView { background: #000; alternate-background-color: #262626; selection-background-color: #007CE0; selection-color: #fff; border: 0; padding: 0; gridline-color: #000; }
 #RX3BrowserTracks QTableView::item { border: 0; padding: 0; }
-#RX3BrowserSources { background: #1b2026; color: #fff; border: 0; font-family: "Arial Narrow"; font-size: 26px; }
+#RX3BrowserSources { background: #1b2026; color: #fff; border: 0; font-family: "Arial"; font-size: 26px; }
 #RX3BrowserSources::item { height: 84px; padding-left: 16px; }
 #RX3BrowserSources::item:selected { background: #007CE0; color: #fff; }
 #RX3BrowserSources QHeaderView::section { background: #30343b; color: #bbb; border: 0; font-size: 16px; padding: 12px; }
@@ -3133,7 +3133,7 @@ WEffectSelector#RX3BeatFxSelector {
 #RX3BrowserFacets { alternate-background-color: #262626; }
 #RX3SourceInfo { background: #202020; padding: 0; }
 
-#RX3BrowserBreadcrumb { font-family: "Arial Narrow"; font-size: 21px; color: #fff; background: transparent; text-align: left; padding: 0; }
+#RX3BrowserBreadcrumb { font-family: "Arial"; font-size: 21px; color: #fff; background: transparent; text-align: left; padding: 0; }
 #RX3BrowserHeader QPushButton#RX3BrowserBreadcrumb { padding: 0 12px; background: #303030; font-size: 18px; }
 
 #RX3SourceInfoPanel { background: #202020; }

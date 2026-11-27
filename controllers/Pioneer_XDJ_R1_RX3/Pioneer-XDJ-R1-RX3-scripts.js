@@ -2,32 +2,40 @@
 //
 // Based on the community "Pioneer XDJ-R1" mapping by Helton Lidio.
 // MIDI addresses follow the "List of MIDI Messages" in the XDJ-R1 operating
-// instructions (deck A = MIDI channel 1, deck B = channel 2, effects = channel
-// 5, mixer = channel 7). The manual prints note/CC numbers in decimal; the
-// values below are the same numbers in hexadecimal.
+// instructions: deck A = MIDI channel 1 (0x90/0xB0), deck B = channel 2,
+// Beat FX deck A = channel 5 (0x94/0xB4), deck B = channel 6 (0x95/0xB5),
+// mixer = channel 7 (0x96/0xB6). The manual prints note/CC numbers in decimal;
+// the values below are the same numbers in hexadecimal.
 //
-// Fixes over the community mapping:
-//   * TEMPO slider: 14-bit (MSB CC 0x00 + LSB CC 0x20). The hardware sends 0 at
-//     the "-" end and 16383 at the "+" end. The deck's rate_dir preference is
-//     compensated so "-" always slows the track down, whatever the
-//     "Pitch/Rate slider direction" setting is.
-//   * TEMPO RANGE: notes 0x0E-0x11 select 6% / 10% / 16% / WIDE.
-//   * SOUND COLOR FX: FILTER / PITCH / CRUSH / NOISE buttons (status 0x94,
-//     notes 0x4E-0x51) select a QuickEffect chain on both decks.
-//   * COLOR knobs: CC 0x1B (deck 1) and 0x1C (deck 2) on the mixer channel
-//     drive the selected Sound Color FX. As on the hardware, COLOR does nothing
-//     while no Sound Color FX is selected.
+//   * TEMPO slider: 14-bit (CC 0x00 + 0x20). "-" always slows the track down,
+//     whatever the "Pitch/Rate slider direction" preference is.
+//   * TEMPO RANGE: 6% / 10% / 16% / WIDE.
+//   * SOUND COLOR FX + COLOR: QuickEffect chains on both decks.
+//   * Beat FX per deck: TRANS / FLANGER / ECHO on effect units 3 (deck 1) and
+//     4 (deck 2), ROLL as a loop roll. BEAT sets the time, LEVEL/DEPTH the mix.
+//   * AUTO BEAT LOOP: press = loop (last size, 4 beats at first), turn =
+//     halve/double.
+//   * HOT CUE section: A, B, C and CALL are hot cues 1-4. MODE switches to the
+//     KEY layer: A = key up, B = key down, C = match key, CALL = reset key.
+//   * VINYL: on = touch the platter top to scratch, the side bends pitch.
+//     Off = CDJ mode, the whole platter bends pitch.
+//   * SYNC / MASTER with lights, channel level meters on the unit.
+//   * SELECT press loads the highlighted track into that deck when the track
+//     list is focused, and otherwise opens BROWSE or enters the folder.
 
 var PioneerXDJR1 = {};
 
 PioneerXDJR1.debug = false;
 PioneerXDJR1.jog_sensitivity = 9.0;
-PioneerXDJR1.scratch_sensitivity = 0.5;
 
 PioneerXDJR1.log = function(message) {
     if (PioneerXDJR1.debug) {
         console.log("XDJ-R1: " + message);
     }
+};
+
+PioneerXDJR1.isPress = function(value, status) {
+    return value > 0 && (status & 0xF0) !== 0x80;
 };
 
 // ---------------------------------------------------------------------------
@@ -59,9 +67,29 @@ PioneerXDJR1.deckNumber = function(group) {
     return match ? Number(match[1]) : 0;
 };
 
+PioneerXDJR1.deckStatus = function(deck) {
+    return 0x90 + deck - 1;
+};
+
+// Relative encoders: 1..30 clockwise, 98..127 (= -30..-1) counter-clockwise.
+PioneerXDJR1.encoderDelta = function(value) {
+    return value > 0x40 ? value - 0x80 : value;
+};
+
 // ---------------------------------------------------------------------------
 // Init / shutdown
 // ---------------------------------------------------------------------------
+
+PioneerXDJR1.connections = [];
+
+PioneerXDJR1.connect = function(group, key, callback) {
+    var connection = engine.makeConnection(group, key, callback);
+    if (connection) {
+        PioneerXDJR1.connections.push(connection);
+        connection.trigger();
+    }
+    return connection;
+};
 
 PioneerXDJR1.init = function(_id, _debugging) {
     engine.softTakeover("[Channel1]", "rate", true);
@@ -77,8 +105,22 @@ PioneerXDJR1.init = function(_id, _debugging) {
 
     for (var deck = 1; deck <= 2; deck++) {
         var group = "[Channel" + deck + "]";
-        engine.makeConnection(group, "rateRange", PioneerXDJR1.paintTempoRange);
-        PioneerXDJR1.paintTempoRange(engine.getValue(group, "rateRange"), group);
+        PioneerXDJR1.connect(group, "rateRange", PioneerXDJR1.paintTempoRange);
+        PioneerXDJR1.connect(group, "sync_enabled", PioneerXDJR1.paintSync);
+        PioneerXDJR1.connect(group, "sync_leader", PioneerXDJR1.paintMaster);
+        PioneerXDJR1.connect(group, "loop_enabled", PioneerXDJR1.paintLoop);
+        PioneerXDJR1.connect(group, "beatloop_size", PioneerXDJR1.paintLoopSize);
+        PioneerXDJR1.connect(group, "pitch_adjust", PioneerXDJR1.paintPads);
+        for (var cue = 1; cue <= 4; cue++) {
+            PioneerXDJR1.connect(group, "hotcue_" + cue + "_status", PioneerXDJR1.paintPads);
+        }
+        if (!PioneerXDJR1.connect(group, "vu_meter", PioneerXDJR1.paintVuMeter)) {
+            PioneerXDJR1.connect(group, "VuMeter", PioneerXDJR1.paintVuMeter);
+        }
+        PioneerXDJR1.padLayer[deck] = "hotcue";
+        PioneerXDJR1.paintPads(0, group);
+        PioneerXDJR1.paintVinyl(deck);
+        PioneerXDJR1.initBeatFx(deck);
     }
 };
 
@@ -87,24 +129,72 @@ PioneerXDJR1.shutdown = function() {
     for (var index = 0; index < PioneerXDJR1.soundColorFx.length; index++) {
         midi.sendShortMsg(0x94, PioneerXDJR1.soundColorFx[index].note, 0x00);
     }
+    for (var deck = 1; deck <= 2; deck++) {
+        PioneerXDJR1.stopBeatFx(deck);
+        midi.sendShortMsg(0xB6, 0x47 + deck - 1, 0x00);
+    }
 };
 
 // ---------------------------------------------------------------------------
-// Jog wheels
+// Jog wheels and VINYL mode
 // ---------------------------------------------------------------------------
 
+// One full turn of the platter is 600 ticks (manual, p. 29).
+PioneerXDJR1.jogTicksPerTurn = 600;
+PioneerXDJR1.vinylMode = {1: true, 2: true};
+PioneerXDJR1.platterTouched = {1: false, 2: false};
+
+PioneerXDJR1.paintVinyl = function(deck) {
+    midi.sendShortMsg(PioneerXDJR1.deckStatus(deck), 0x15,
+        PioneerXDJR1.vinylMode[deck] ? 0x7F : 0x00);
+};
+
+PioneerXDJR1.vinylButton = function(channel, control, value, status, group) {
+    if (!PioneerXDJR1.isPress(value, status)) {
+        return;
+    }
+    var deck = PioneerXDJR1.deckNumber(group);
+    PioneerXDJR1.vinylMode[deck] = !PioneerXDJR1.vinylMode[deck];
+    if (!PioneerXDJR1.vinylMode[deck] && PioneerXDJR1.platterTouched[deck]) {
+        PioneerXDJR1.platterTouched[deck] = false;
+        engine.scratchDisable(deck);
+    }
+    PioneerXDJR1.paintVinyl(deck);
+};
+
+// Platter top touched / released (note 0x36).
+PioneerXDJR1.platterTouch = function(channel, control, value, status, group) {
+    var deck = PioneerXDJR1.deckNumber(group);
+    var touched = PioneerXDJR1.isPress(value, status);
+    if (touched && PioneerXDJR1.vinylMode[deck]) {
+        PioneerXDJR1.platterTouched[deck] = true;
+        engine.scratchEnable(deck, PioneerXDJR1.jogTicksPerTurn, 33 + 1 / 3,
+            1 / 8, (1 / 8) / 32);
+    } else if (!touched && PioneerXDJR1.platterTouched[deck]) {
+        PioneerXDJR1.platterTouched[deck] = false;
+        // Ramp back to normal speed, so a backspin plays out naturally.
+        engine.scratchDisable(deck, true);
+    }
+};
+
+// Platter top turned (CC 0x02): scratch while touched in VINYL mode.
+PioneerXDJR1.jogTop = function(channel, control, value, status, group) {
+    var deck = PioneerXDJR1.deckNumber(group);
+    var delta = value - 0x40;
+    if (PioneerXDJR1.platterTouched[deck] && engine.isScratching(deck)) {
+        engine.scratchTick(deck, delta);
+    } else {
+        engine.setValue(group, "jog", delta / PioneerXDJR1.jog_sensitivity);
+    }
+};
+
+// Platter side turned (CC 0x01), and the top in CDJ mode: bend the tempo.
 PioneerXDJR1.jog_wheel = function(channel, control, value, status, group) {
-    value = (value - 0x40) / PioneerXDJR1.jog_sensitivity;
-    engine.setValue(group, "jog", value);
-};
-
-PioneerXDJR1.jog_scratch = function(channel, control, value, status, group) {
-    value = (value - 0x40) / PioneerXDJR1.scratch_sensitivity;
-    engine.setValue(group, "jog", value);
+    engine.setValue(group, "jog", (value - 0x40) / PioneerXDJR1.jog_sensitivity);
 };
 
 // ---------------------------------------------------------------------------
-// TEMPO slider (fix: was reversed and 7-bit)
+// TEMPO slider
 // ---------------------------------------------------------------------------
 
 PioneerXDJR1.applyTempo = function(group, normalized) {
@@ -127,7 +217,7 @@ PioneerXDJR1.tempoLsb = function(channel, control, value, status, group) {
 };
 
 // ---------------------------------------------------------------------------
-// TEMPO RANGE (fix: was unmapped)
+// TEMPO RANGE
 // ---------------------------------------------------------------------------
 
 // Notes 0x0E-0x11 = 6% / 10% / 16% / WIDE. WIDE is +/-100% as on the unit.
@@ -146,7 +236,7 @@ PioneerXDJR1.tempoRangeIndex = function(range) {
 };
 
 PioneerXDJR1.tempoRange = function(channel, control, value, status, group) {
-    if (value === 0 || (status & 0xF0) === 0x80) {
+    if (!PioneerXDJR1.isPress(value, status)) {
         return;
     }
     var current = PioneerXDJR1.tempoRangeIndex(engine.getValue(group, "rateRange"));
@@ -161,8 +251,6 @@ PioneerXDJR1.tempoRange = function(channel, control, value, status, group) {
     // the next range so the button still cycles 6 -> 10 -> 16 -> WIDE.
     var next = requested === current ?
         (current + 1) % PioneerXDJR1.tempoRanges.length : requested;
-    PioneerXDJR1.log(group + " tempo range note 0x" + control.toString(16) +
-        " -> " + PioneerXDJR1.tempoRanges[next]);
     engine.setValue(group, "rateRange", PioneerXDJR1.tempoRanges[next]);
 };
 
@@ -173,13 +261,322 @@ PioneerXDJR1.paintTempoRange = function(range, group) {
     }
     var selected = PioneerXDJR1.tempoRangeIndex(range);
     for (var index = 0; index < PioneerXDJR1.tempoRanges.length; index++) {
-        midi.sendShortMsg(0x90 + deck - 1, PioneerXDJR1.tempoRangeFirstNote + index,
-            index === selected ? 0x7F : 0x00);
+        midi.sendShortMsg(PioneerXDJR1.deckStatus(deck),
+            PioneerXDJR1.tempoRangeFirstNote + index, index === selected ? 0x7F : 0x00);
     }
 };
 
 // ---------------------------------------------------------------------------
-// SOUND COLOR FX + COLOR knob (fix: were unmapped)
+// SYNC / MASTER (persistent SYNC, as in the other NauticMixxx Pioneer presets)
+// ---------------------------------------------------------------------------
+
+PioneerXDJR1.Sync = function(channel, control, value, status, group) {
+    if (!PioneerXDJR1.isPress(value, status) || engine.getValue(group, "rx3_source_lost")) {
+        return;
+    }
+    if (engine.getValue(group, "sync_enabled")) {
+        engine.setValue(group, "sync_enabled", 0);
+    } else {
+        engine.setValue(group, "sync_enabled", 1);
+        engine.setValue(group, "beatsync_phase", 1);
+    }
+};
+
+PioneerXDJR1.Master = function(channel, control, value, status, group) {
+    if (!PioneerXDJR1.isPress(value, status) || engine.getValue(group, "rx3_source_lost")) {
+        return;
+    }
+    engine.setValue(group, "sync_leader", engine.getValue(group, "sync_leader") > 0 ? 0 : 1);
+};
+
+PioneerXDJR1.paintSync = function(value, group) {
+    midi.sendShortMsg(PioneerXDJR1.deckStatus(PioneerXDJR1.deckNumber(group)), 0x58,
+        value > 0 ? 0x7F : 0x00);
+};
+
+PioneerXDJR1.paintMaster = function(value, group) {
+    midi.sendShortMsg(PioneerXDJR1.deckStatus(PioneerXDJR1.deckNumber(group)), 0x59,
+        value > 0 ? 0x7F : 0x00);
+};
+
+// ---------------------------------------------------------------------------
+// Channel level meters (B6 0x47 = deck A, 0x48 = deck B; 0-127)
+// ---------------------------------------------------------------------------
+
+PioneerXDJR1.lastVu = {1: -1, 2: -1};
+
+PioneerXDJR1.paintVuMeter = function(value, group) {
+    var deck = PioneerXDJR1.deckNumber(group);
+    var level = Math.max(0, Math.min(127, Math.round(value * 127)));
+    if (level === PioneerXDJR1.lastVu[deck]) {
+        return;
+    }
+    PioneerXDJR1.lastVu[deck] = level;
+    midi.sendShortMsg(0xB6, 0x47 + deck - 1, level);
+};
+
+// ---------------------------------------------------------------------------
+// AUTO BEAT LOOP
+// ---------------------------------------------------------------------------
+
+// Press: exit the active loop, or start one of the deck's current loop size
+// (Mixxx starts every deck at 4 beats and remembers the last size).
+PioneerXDJR1.autoLoopPress = function(channel, control, value, status, group) {
+    if (!PioneerXDJR1.isPress(value, status)) {
+        return;
+    }
+    if (engine.getValue(group, "loop_enabled")) {
+        engine.setValue(group, "reloop_toggle", 1);
+    } else {
+        engine.setValue(group, "beatloop_activate", 1);
+    }
+};
+
+// SHIFT + press: re-enter the last loop.
+PioneerXDJR1.autoLoopShiftPress = function(channel, control, value, status, group) {
+    if (PioneerXDJR1.isPress(value, status)) {
+        engine.setValue(group, "reloop_toggle", 1);
+    }
+};
+
+// Turn: right doubles, left halves the loop (and the size of the next loop).
+PioneerXDJR1.autoLoopTurn = function(channel, control, value, status, group) {
+    var delta = PioneerXDJR1.encoderDelta(value);
+    if (delta > 0) {
+        engine.setValue(group, "loop_double", 1);
+    } else if (delta < 0) {
+        engine.setValue(group, "loop_halve", 1);
+    }
+};
+
+// SHIFT + turn: move the loop (or the play position) by one beat-jump.
+PioneerXDJR1.autoLoopShiftTurn = function(channel, control, value, status, group) {
+    var delta = PioneerXDJR1.encoderDelta(value);
+    if (delta !== 0) {
+        engine.setValue(group, delta > 0 ? "beatjump_forward" : "beatjump_backward", 1);
+    }
+};
+
+PioneerXDJR1.paintLoop = function(value, group) {
+    midi.sendShortMsg(PioneerXDJR1.deckStatus(PioneerXDJR1.deckNumber(group)), 0x14,
+        value > 0 ? 0x7F : 0x00);
+};
+
+// The unit shows the loop length from notes 0x6E (32 beats) to 0x78 (1/32).
+PioneerXDJR1.loopSizeNotes = [32, 16, 8, 4, 2, 1, 1 / 2, 1 / 4, 1 / 8, 1 / 16, 1 / 32];
+
+PioneerXDJR1.paintLoopSize = function(size, group) {
+    var status = PioneerXDJR1.deckStatus(PioneerXDJR1.deckNumber(group));
+    for (var index = 0; index < PioneerXDJR1.loopSizeNotes.length; index++) {
+        if (Math.abs(PioneerXDJR1.loopSizeNotes[index] - size) < 1e-6) {
+            midi.sendShortMsg(status, 0x6E + index, 0x7F);
+        }
+    }
+};
+
+// ---------------------------------------------------------------------------
+// HOT CUE section: hot cues A, B, C, D (CALL) and the KEY layer (MODE)
+// ---------------------------------------------------------------------------
+
+// The unit sends different notes for its HOT CUE and 4-BEAT SAMPLER modes;
+// both sets are treated as the same three buttons.
+PioneerXDJR1.padNotes = {
+    0x2E: 1, 0x2F: 2, 0x30: 3, 0x19: 4, // A, B, C, CALL
+    0x32: 1, 0x33: 2, 0x34: 3, // A-C in 4-BEAT SAMPLER mode
+};
+PioneerXDJR1.padShiftNotes = {
+    0x5F: 1, 0x60: 2, 0x61: 3, 0x55: 4,
+    0x63: 1, 0x64: 2, 0x65: 3,
+};
+PioneerXDJR1.padLayer = {1: "hotcue", 2: "hotcue"};
+
+PioneerXDJR1.modeButton = function(channel, control, value, status, group) {
+    if (!PioneerXDJR1.isPress(value, status)) {
+        return;
+    }
+    var deck = PioneerXDJR1.deckNumber(group);
+    PioneerXDJR1.padLayer[deck] = PioneerXDJR1.padLayer[deck] === "hotcue" ? "key" : "hotcue";
+    PioneerXDJR1.paintPads(0, group);
+};
+
+PioneerXDJR1.pad = function(channel, control, value, status, group) {
+    var deck = PioneerXDJR1.deckNumber(group);
+    var shifted = PioneerXDJR1.padShiftNotes[control] !== undefined;
+    var pad = shifted ? PioneerXDJR1.padShiftNotes[control] : PioneerXDJR1.padNotes[control];
+    if (!pad) {
+        return;
+    }
+    var pressed = PioneerXDJR1.isPress(value, status);
+    if (PioneerXDJR1.padLayer[deck] === "key") {
+        if (pressed) {
+            var keyActions = {1: "pitch_up", 2: "pitch_down", 3: "sync_key", 4: "reset_key"};
+            engine.setValue(group, keyActions[pad], 1);
+        }
+        return;
+    }
+    if (shifted) {
+        if (pressed) {
+            engine.setValue(group, "hotcue_" + pad + "_clear", 1);
+        }
+        return;
+    }
+    // Held: set or jump to the cue; releasing returns to the cue while paused.
+    engine.setValue(group, "hotcue_" + pad + "_activate", pressed ? 1 : 0);
+};
+
+PioneerXDJR1.paintPads = function(_value, group) {
+    var deck = PioneerXDJR1.deckNumber(group);
+    if (deck < 1 || deck > 2) {
+        return;
+    }
+    var status = PioneerXDJR1.deckStatus(deck);
+    var lit = {};
+    if (PioneerXDJR1.padLayer[deck] === "key") {
+        var shift = engine.getValue(group, "pitch_adjust");
+        lit = {1: shift > 0, 2: shift < 0, 3: true, 4: shift !== 0};
+    } else {
+        for (var cue = 1; cue <= 4; cue++) {
+            lit[cue] = engine.getValue(group, "hotcue_" + cue + "_status") > 0;
+        }
+    }
+    for (var note in PioneerXDJR1.padNotes) {
+        midi.sendShortMsg(status, Number(note), lit[PioneerXDJR1.padNotes[note]] ? 0x7F : 0x00);
+    }
+    // MODE lamp: lit = HOT CUE, dark = KEY layer (manual, p. 29).
+    midi.sendShortMsg(status, 0x3B, PioneerXDJR1.padLayer[deck] === "hotcue" ? 0x7F : 0x00);
+};
+
+// ---------------------------------------------------------------------------
+// Beat FX (per deck): TRANS / FLANGER / ECHO / ROLL, BEAT, LEVEL/DEPTH
+// ---------------------------------------------------------------------------
+
+// "preset" is the position in Mixxx's effect chain preset list. The installers
+// pin XDJ-R1 TRANS, FLANGER and ECHO at 1-3 (0 is the empty "---" preset).
+// "parameter" is the effect's time knob: tremolo rate, flanger speed, echo
+// delay time, all in beats.
+PioneerXDJR1.beatFx = [
+    {name: "TRANS", preset: 1, parameter: 2, maxBeats: 16},
+    {name: "FLANGER", preset: 2, parameter: 1, maxBeats: 32},
+    {name: "ECHO", preset: 3, parameter: 1, maxBeats: 4},
+    {name: "ROLL"},
+];
+PioneerXDJR1.beatFxFirstNote = 0x46; // SHIFT notes start at 0x62
+PioneerXDJR1.beatFxBeats = [1 / 16, 1 / 8, 1 / 4, 1 / 2, 1, 2, 4, 8];
+PioneerXDJR1.beatFxSelected = {1: 0, 2: 0}; // 0 = off, otherwise index + 1
+PioneerXDJR1.beatFxBeatIndex = {1: 4, 2: 4}; // 1 beat
+PioneerXDJR1.beatFxLevel = {1: 0.5, 2: 0.5};
+PioneerXDJR1.rollSize = {1: 0, 2: 0};
+
+PioneerXDJR1.beatFxUnit = function(deck) {
+    return "[EffectRack1_EffectUnit" + (deck + 2) + "]";
+};
+
+PioneerXDJR1.initBeatFx = function(deck) {
+    var unit = PioneerXDJR1.beatFxUnit(deck);
+    engine.setValue(unit, "enabled", 0);
+    engine.setValue(unit, "group_[Channel1]_enable", deck === 1 ? 1 : 0);
+    engine.setValue(unit, "group_[Channel2]_enable", deck === 2 ? 1 : 0);
+    PioneerXDJR1.beatFxSelected[deck] = 0;
+    PioneerXDJR1.paintBeatFx(deck);
+};
+
+PioneerXDJR1.paintBeatFx = function(deck) {
+    for (var index = 0; index < PioneerXDJR1.beatFx.length; index++) {
+        midi.sendShortMsg(0x94 + deck - 1, PioneerXDJR1.beatFxFirstNote + index,
+            index + 1 === PioneerXDJR1.beatFxSelected[deck] ? 0x7F : 0x00);
+    }
+};
+
+PioneerXDJR1.setRoll = function(deck, beats) {
+    var group = "[Channel" + deck + "]";
+    if (PioneerXDJR1.rollSize[deck]) {
+        engine.setValue(group, "beatlooproll_" + PioneerXDJR1.rollSize[deck] + "_activate", 0);
+    }
+    PioneerXDJR1.rollSize[deck] = beats;
+    if (beats) {
+        engine.setValue(group, "beatlooproll_" + beats + "_activate", 1);
+    }
+};
+
+PioneerXDJR1.applyBeatFxTime = function(deck) {
+    var selected = PioneerXDJR1.beatFxSelected[deck];
+    if (selected === 0) {
+        return;
+    }
+    var fx = PioneerXDJR1.beatFx[selected - 1];
+    var beats = PioneerXDJR1.beatFxBeats[PioneerXDJR1.beatFxBeatIndex[deck]];
+    if (fx.name === "ROLL") {
+        PioneerXDJR1.setRoll(deck, beats);
+        return;
+    }
+    engine.setValue("[EffectRack1_EffectUnit" + (deck + 2) + "_Effect1]",
+        "parameter" + fx.parameter, Math.min(fx.maxBeats, Math.max(1 / 4, beats)));
+};
+
+PioneerXDJR1.stopBeatFx = function(deck) {
+    PioneerXDJR1.setRoll(deck, 0);
+    engine.setValue(PioneerXDJR1.beatFxUnit(deck), "enabled", 0);
+    PioneerXDJR1.beatFxSelected[deck] = 0;
+    PioneerXDJR1.paintBeatFx(deck);
+};
+
+PioneerXDJR1.beatFxButton = function(channel, control, value, status) {
+    if (!PioneerXDJR1.isPress(value, status)) {
+        return;
+    }
+    var deck = (status & 0x0F) === 4 ? 1 : 2;
+    var note = control >= 0x62 ? control - 0x1C : control;
+    var selected = note - PioneerXDJR1.beatFxFirstNote + 1;
+    if (selected < 1 || selected > PioneerXDJR1.beatFx.length) {
+        return;
+    }
+    if (PioneerXDJR1.beatFxSelected[deck] === selected) {
+        PioneerXDJR1.stopBeatFx(deck); // pressing the lit button again turns it off
+        return;
+    }
+    PioneerXDJR1.setRoll(deck, 0);
+    PioneerXDJR1.beatFxSelected[deck] = selected;
+    var fx = PioneerXDJR1.beatFx[selected - 1];
+    var unit = PioneerXDJR1.beatFxUnit(deck);
+    if (fx.name === "ROLL") {
+        engine.setValue(unit, "enabled", 0);
+    } else {
+        engine.setValue(unit, "loaded_chain_preset", fx.preset);
+        engine.setValue(unit, "mix", PioneerXDJR1.beatFxLevel[deck]);
+        engine.setValue(unit, "enabled", 1);
+    }
+    PioneerXDJR1.applyBeatFxTime(deck);
+    PioneerXDJR1.paintBeatFx(deck);
+};
+
+// BEAT knob (B4/B5 0x00; SHIFT 0x10), 0-127 across 1/16 to 8 beats.
+PioneerXDJR1.beatFxBeat = function(channel, control, value, status) {
+    var deck = (status & 0x0F) === 4 ? 1 : 2;
+    var steps = PioneerXDJR1.beatFxBeats.length;
+    PioneerXDJR1.beatFxBeatIndex[deck] = Math.min(steps - 1, Math.floor(value * steps / 128));
+    PioneerXDJR1.applyBeatFxTime(deck);
+};
+
+// LEVEL/DEPTH (B4/B5 0x02 + 0x22, 14-bit): dry/wet of the deck's FX unit.
+PioneerXDJR1.applyBeatFxLevel = function(deck, normalized) {
+    PioneerXDJR1.beatFxLevel[deck] = normalized;
+    engine.setValue(PioneerXDJR1.beatFxUnit(deck), "mix", normalized);
+};
+
+PioneerXDJR1.beatFxLevelMsb = function(channel, control, value, status) {
+    var deck = (status & 0x0F) === 4 ? 1 : 2;
+    PioneerXDJR1.applyBeatFxLevel(deck,
+        PioneerXDJR1.fourteenBitValue("fxlevel" + deck, "msb", value));
+};
+
+PioneerXDJR1.beatFxLevelLsb = function(channel, control, value, status) {
+    var deck = (status & 0x0F) === 4 ? 1 : 2;
+    PioneerXDJR1.applyBeatFxLevel(deck,
+        PioneerXDJR1.fourteenBitValue("fxlevel" + deck, "lsb", value));
+};
+
+// ---------------------------------------------------------------------------
+// SOUND COLOR FX + COLOR knob
 // ---------------------------------------------------------------------------
 
 // "preset" is the position in the QuickEffect chain preset list. NauticMixxx
@@ -222,7 +619,7 @@ PioneerXDJR1.paintSoundColorFx = function() {
 };
 
 PioneerXDJR1.soundColorFxButton = function(channel, control, value, status) {
-    if (value === 0 || (status & 0xF0) === 0x80) {
+    if (!PioneerXDJR1.isPress(value, status)) {
         return;
     }
     var note = control;
@@ -239,7 +636,6 @@ PioneerXDJR1.soundColorFxButton = function(channel, control, value, status) {
         PioneerXDJR1.soundColorFxSelected = 0;
         PioneerXDJR1.setSoundColorFxEnabled(false);
         PioneerXDJR1.paintSoundColorFx();
-        PioneerXDJR1.log("Sound Color FX off");
         return;
     }
 
@@ -256,7 +652,6 @@ PioneerXDJR1.soundColorFxButton = function(channel, control, value, status) {
         engine.setValue(group, "enabled", 1);
     }
     PioneerXDJR1.paintSoundColorFx();
-    PioneerXDJR1.log("Sound Color FX " + fx.name);
 };
 
 PioneerXDJR1.applyColor = function(deck, normalized) {
@@ -282,11 +677,38 @@ PioneerXDJR1.colorLsb = function(channel, control, value) {
 };
 
 // ---------------------------------------------------------------------------
-// Transport and mixer buttons (from the community mapping)
+// Browser: SELECT press loads from the track list, otherwise navigates
+// ---------------------------------------------------------------------------
+
+// [Library] focused_widget is 3 while the track table has keyboard focus,
+// which is where the NauticMixxx browser puts it on the track list.
+PioneerXDJR1.trackListFocused = function() {
+    return NauticRX3Browser.isOpen() && engine.getValue("[Library]", "focused_widget") === 3;
+};
+
+PioneerXDJR1.selectLoading = {};
+
+PioneerXDJR1.selectPress = function(channel, control, value, status, group) {
+    if (PioneerXDJR1.isPress(value, status)) {
+        if (PioneerXDJR1.trackListFocused()) {
+            PioneerXDJR1.selectLoading[group] = true;
+            engine.setValue(group, "LoadSelectedTrack", 1);
+            return;
+        }
+        PioneerXDJR1.selectLoading[group] = false;
+    } else if (PioneerXDJR1.selectLoading[group]) {
+        PioneerXDJR1.selectLoading[group] = false;
+        return; // release of a load press
+    }
+    NauticRX3Browser.enter(channel, control, value, status, group);
+};
+
+// ---------------------------------------------------------------------------
+// Transport and mixer buttons
 // ---------------------------------------------------------------------------
 
 PioneerXDJR1.ClearCue = function(channel, control, value, status, group) {
-    if (value) {
+    if (PioneerXDJR1.isPress(value, status)) {
         engine.setValue(group, "cue_point", -1);
     }
 };
@@ -325,16 +747,6 @@ PioneerXDJR1.CueDecks = function(channel, control, value, status, group) {
     }
 };
 
-PioneerXDJR1.Sync = function(channel, control, value, status, group) {
-    if (!engine.getValue(group, "beatsync")) {
-        engine.setValue(group, "beatsync", 1);
-        midi.sendShortMsg(status, 0x58, 0x01);
-    } else {
-        engine.setValue(group, "beatsync", 0);
-        midi.sendShortMsg(status, 0x58, 0x00);
-    }
-};
-
 PioneerXDJR1.masterTempoLastClicked = {};
 PioneerXDJR1.MasterTempo = function(channel, control, value, status, group) {
     var now = Date.now();
@@ -345,13 +757,6 @@ PioneerXDJR1.MasterTempo = function(channel, control, value, status, group) {
     PioneerXDJR1.masterTempoLastClicked[group] = now;
     var enabled = !engine.getValue(group, "keylock");
     engine.setValue(group, "keylock", enabled ? 1 : 0);
-    midi.sendShortMsg(0x90 + PioneerXDJR1.deckNumber(group) - 1, 0x1A,
+    midi.sendShortMsg(PioneerXDJR1.deckStatus(PioneerXDJR1.deckNumber(group)), 0x1A,
         enabled ? 0x7F : 0x00);
-};
-
-// SHIFT + SELECT press: load the highlighted track into this deck.
-PioneerXDJR1.loadTrack = function(channel, control, value, status, group) {
-    if (value && (status & 0xF0) !== 0x80) {
-        engine.setValue(group, "LoadSelectedTrack", 1);
-    }
 };

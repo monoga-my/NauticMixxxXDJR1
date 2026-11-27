@@ -1,0 +1,78 @@
+diff --git a/src/widget/wtracktableview.cpp b/src/widget/wtracktableview.cpp
+--- a/src/widget/wtracktableview.cpp
++++ b/src/widget/wtracktableview.cpp
+@@ -55,10 +55,12 @@ const ConfigKey kVScrollBarPosConfigKey{
+ 
+ QFont rx3RowFont(int rowHeight, bool compact) {
+     QFont font(QStringLiteral("Arial"));
++    // Larger, unsqueezed text reads better on small high-density screens
++    // such as 7-inch handhelds; it still fits inside the fixed row height.
+     font.setPixelSize(qMax(compact ? 14 : 12,
+-            qRound(rowHeight * (compact ? 0.42 : 0.5))));
++            qRound(rowHeight * (compact ? 0.47 : 0.56))));
+     font.setWeight(QFont::Normal);
+-    font.setLetterSpacing(QFont::PercentageSpacing, compact ? 94 : 97);
++    font.setLetterSpacing(QFont::PercentageSpacing, 100);
+     return font;
+ }
+ 
+@@ -1531,7 +1533,8 @@ void WTrackTableView::setRx3Browser(bool enabled) {
+     const auto* tm = getTrackModel();
+     if (!tm) return;
+     for (const auto& field : {LIBRARYTABLE_PREVIEW, LIBRARYTABLE_TRACKNUMBER,
+-                 LIBRARYTABLE_TITLE, LIBRARYTABLE_ARTIST, LIBRARYTABLE_BPM, LIBRARYTABLE_GENRE}) {
++                 LIBRARYTABLE_TITLE, LIBRARYTABLE_ARTIST, LIBRARYTABLE_BPM, LIBRARYTABLE_KEY,
++                 LIBRARYTABLE_GENRE}) {
+         const int column = tm->fieldIndex(field);
+         if (column < 0) continue;
+         if (!dynamic_cast<Rx3TrackDelegate*>(itemDelegateForColumn(column))) {
+@@ -1568,9 +1571,11 @@ void WTrackTableView::applyRx3Columns() {
+     const bool search=property("rx3SearchTracks").toBool();
+     const QStringList fields = search ? QStringList{LIBRARYTABLE_PREVIEW,LIBRARYTABLE_TITLE} : m_rx3ExpandedTracks
+             ? QStringList{LIBRARYTABLE_PREVIEW, LIBRARYTABLE_TITLE,
+-                    LIBRARYTABLE_ARTIST, LIBRARYTABLE_BPM, LIBRARYTABLE_GENRE}
++                    LIBRARYTABLE_ARTIST, LIBRARYTABLE_BPM, LIBRARYTABLE_KEY,
++                    LIBRARYTABLE_GENRE}
+             : QStringList{LIBRARYTABLE_PREVIEW, LIBRARYTABLE_COVERART,
+-                    LIBRARYTABLE_TRACKNUMBER, LIBRARYTABLE_TITLE, LIBRARYTABLE_ARTIST};
++                    LIBRARYTABLE_TRACKNUMBER, LIBRARYTABLE_TITLE, LIBRARYTABLE_ARTIST,
++                    LIBRARYTABLE_KEY};
+     for (int c = 0; c < model()->columnCount(); ++c) {
+         setColumnHidden(c, !fields.contains(model()->headerData(c, Qt::Horizontal, TrackModel::kHeaderNameRole).toString()));
+     }
+@@ -1606,8 +1611,9 @@ void WTrackTableView::applyRx3Columns() {
+                                 qRound(14 * scale)),
+                 qRound(74 * scale));
+         const int genre = bpm * 2;
++        const int key = bpm;
+         const int preview = qBound(qRound(110*scale), viewport()->width()/5, qRound(208*scale));
+-        const int flexible = qMax(0, viewport()->width() - preview - bpm - genre - 4);
++        const int flexible = qMax(0, viewport()->width() - preview - bpm - key - genre - 4);
+         const int title = qRound(flexible * 0.55);
+         const int artist = flexible - title;
+         for (const auto& field : fields) {
+@@ -1617,16 +1623,22 @@ void WTrackTableView::applyRx3Columns() {
+             const int width = field == LIBRARYTABLE_PREVIEW ? preview
+                     : field == LIBRARYTABLE_TITLE ? title
+                     : field == LIBRARYTABLE_ARTIST ? artist
+-                    : field == LIBRARYTABLE_BPM ? bpm : genre;
++                    : field == LIBRARYTABLE_BPM ? bpm
++                    : field == LIBRARYTABLE_KEY ? key : genre;
+             horizontalHeader()->resizeSection(c, qMax(1, width));
+         }
+         return;
+     }
++    // KEY is wide enough for "12A", "Abm" or "11d" in the row font.
++    const int key = QFontMetrics(rx3RowFont(row, false)).horizontalAdvance(QStringLiteral("Abm")) +
++            qRound(24 * scale);
+     for (const auto& field : fields) {
+         const int c = tm->fieldIndex(field);
+         if (c < 0) continue;
+         horizontalHeader()->moveSection(horizontalHeader()->visualIndex(c), position++);
+-        int w = field == "preview" ? qRound(208*scale) : field == "coverart" ? row : field == "tracknumber" ? qRound(54*scale) : qMax(100, (viewport()->width()-qRound(310*scale))/2);
++        int w = field == "preview" ? qRound(208*scale) : field == "coverart" ? row : field == "tracknumber" ? qRound(54*scale)
++                : field == LIBRARYTABLE_KEY ? key
++                : qMax(100, (viewport()->width()-qRound(310*scale)-key)/2);
+         horizontalHeader()->resizeSection(c, w);
+     }
+ }

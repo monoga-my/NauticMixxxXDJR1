@@ -91,8 +91,8 @@ no Qt on the Mac. The Windows workflow is the first compile and test run.
   COLOR does nothing while no FX is selected, as on the hardware.
 - PITCH/CRUSH chains use the built-in effect IDs `org.mixxx.effects.pitchshift`
   (param `pitch`) and `org.mixxx.effects.bitcrusher` (`bit_depth`,
-  `downsample`, linked inverted). These param IDs were written from memory and
-  are **unverified**.
+  `downsample`, linked inverted). These were checked against the Mixxx 2.5.6
+  source.
 - Browser: the XDJ-R1 has no LOAD buttons. SELECT turn/press drive
   NauticMixxx's own RX3 browser (shared `Nautic-RX3-Browser.js` and
   `Nautic-RX3-Encoder-Pioneer-Roland.js` from `controllers/Pioneer_Roland_RX3`).
@@ -102,8 +102,38 @@ no Qt on the Mac. The Windows workflow is the first compile and test run.
 - Auto-select: patch 0016 maps a MIDI port name containing `XDJ-R1` to
   `Pioneer-XDJ-R1-RX3.midi.xml`. This works only in builds from this branch.
 
+## Round 2: user feedback after the first hardware test
+
+The first build worked on the Ally: the USB loads and most controls work. The
+user then asked for the changes below. They are on `xdj-r1-support` in the
+commit after `6e4ccba`.
+
+| Request | Implementation |
+| --- | --- |
+| Load with SELECT, no SHIFT | `selectPress`: if the browser is open and `[Library] focused_widget == 3` (track table), load into that deck; otherwise `NauticRX3Browser.enter`. SHIFT + SELECT = always navigate (fallback) |
+| AUTO BEAT LOOP | press `beatloop_activate` / `reloop_toggle` to exit; turn (B0/B1 0x13, relative) `loop_double`/`loop_halve`; size display notes 0x6E–0x78 |
+| Beat FX dead | Units 3 (deck 1) and 4 (deck 2), routed per deck. TRANS/FLANGER/ECHO = chain presets `XDJ-R1 TRANS/FLANGER/ECHO` loaded by `loaded_chain_preset` 1–3, so the installers pin them at the top of `ChainPresetList`. ROLL = `beatlooproll_<beats>_activate`. BEAT (B4/B5 0x00, treated as absolute 0–127) → time parameter (tremolo `parameter2`, flanger/echo `parameter1`). LEVEL/DEPTH 14-bit → unit `mix`. NauticMixxx's own Beat FX panel uses unit 1, so 3/4 don't clash |
+| SYNC/MASTER lights | `sync_enabled` / `sync_leader` connections → notes 0x58 / 0x59. SYNC is persistent, like the DDJ-400 RX3 mapping (`beatsync_phase`, respects `rx3_source_lost`) |
+| Channel VU meters | `vu_meter` (fallback `VuMeter`) → B6 0x47 / 0x48 |
+| Hot cues + KEY layer | A/B/C/CALL = hot cues 1–4 (also the sampler-mode notes 0x32–0x34). MODE toggles the KEY layer: A `pitch_up`, B `pitch_down`, C `sync_key`, CALL `reset_key`. MODE lamp lit = hot cues |
+| VINYL | Per-deck flag (default on). Top touch 9n 0x36 → `scratchEnable(deck, 600, 33⅓, 1/8, 1/256)`; top turn → `scratchTick`; release → `scratchDisable(deck, true)`. Side (0x01) → `jog`. Off = everything → `jog` |
+| KEY column | New **patch 0045** (`wtracktableview.cpp`): KEY added to both track-list layouts. The patch-count checks (44 → 45) were bumped in four scripts |
+| Small, squished text | Skin `style.qss`: "Arial Narrow" → "Arial". Patch 0045 also makes the browser row font larger (0.5 → 0.56 of row height) at 100% letter spacing. Rows stay at 12, because `rx3display_test.cpp` checks that. Full screen (F11) also enlarges everything |
+
+Mixxx facts that drove the design, from the 2.5.6 source:
+`loaded_chain_preset` is a 0-based index whose position 0 is the empty `---`
+preset. Preset files named in neither `effects.xml` list are put at the
+**front of both lists** on startup, which would shift the Sound Color FX
+positions. That is why every chain file the mapping uses must be listed by the
+installers. `[EffectRack1_EffectUnitN_EffectM] loaded_effect` is writable but
+indexes the user-ordered visible-effects list, so it was not used.
+
 ## Next steps
 
+0. Round 2 needs a new Windows build (patch 0045). Then check each row of the
+   round-2 table on the hardware, especially Beat FX (does BEAT behave as an
+   absolute knob?), VINYL scratching feel, and whether SELECT loads from the
+   track list.
 1. When the build finishes: if it failed, read the failing step's log
    (`gh run view <id> --log-failed -R monoga-my/NauticMixxxXDJR1`) and fix it.
    The most likely place is the new C++ or its tests in patch 0010. If it

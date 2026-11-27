@@ -48,6 +48,9 @@ EFFECT_CHAIN_FILES = (
     "RX3 FILTER.xml",
     "RX3 PITCH.xml",
     "RX3 CRUSH.xml",
+    "XDJ-R1 TRANS.xml",
+    "XDJ-R1 FLANGER.xml",
+    "XDJ-R1 ECHO.xml",
 )
 LEGACY_EFFECT_CHAIN_FILES = ("RX3 SPACE.xml", "RX3 DUB ECHO.xml")
 QUICK_EFFECT_PRESETS = (
@@ -59,6 +62,8 @@ QUICK_EFFECT_PRESETS = (
     "RX3 CRUSH",
 )
 LEGACY_QUICK_EFFECT_PRESETS = ("RX3 SPACE", "RX3 DUB ECHO")
+# Beat FX presets the XDJ-R1 mapping loads by position (1-3) on effect units 3-4.
+BEAT_FX_PRESETS = ("XDJ-R1 TRANS", "XDJ-R1 FLANGER", "XDJ-R1 ECHO")
 MANAGED_SECTIONS = (
     "Config",
     "Controls",
@@ -183,6 +188,17 @@ def configure_quick_effect_order(profile_dir: Path) -> None:
         node = ET.Element("ChainPresetName")
         node.text = name
         preset_list.insert(0, node)
+
+    chain_list = root.find("ChainPresetList")
+    if chain_list is None:
+        chain_list = ET.SubElement(root, "ChainPresetList")
+    for child in list(chain_list):
+        if child.tag == "ChainPresetName" and (child.text or "").strip() in BEAT_FX_PRESETS:
+            chain_list.remove(child)
+    for name in reversed(BEAT_FX_PRESETS):
+        node = ET.Element("ChainPresetName")
+        node.text = name
+        chain_list.insert(0, node)
 
     ET.indent(root, space=" ")
     updated = ET.tostring(root, encoding="utf-8", xml_declaration=True) + b"\n"

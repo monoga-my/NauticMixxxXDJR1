@@ -1,5 +1,12 @@
 # NauticMixxx native patches
 
+## 0045 — Browser KEY column and larger track text
+
+Adds a KEY column to both RX3 track-list layouts (normal and expanded). The
+track rows use a larger Arial (0.56 of the row height, compact 0.47) at 100%
+letter spacing, so the list reads better on small, high-density screens such
+as 7-inch handhelds. The twelve-row geometry is unchanged.
+
 ## 0028 — Integrated updates and display corrections for v1.9.1
 
 Adds a signed macOS Sparkle adapter, Qt update choices/status, Windows signed

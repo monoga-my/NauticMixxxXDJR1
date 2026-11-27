@@ -83,6 +83,23 @@ try {
         $node.InnerText = $wanted[$i]
         [void]$list.PrependChild($node)
     }
+    # Beat FX presets the XDJ-R1 mapping loads by position (1-3).
+    $chainList = $xml.DocumentElement.SelectSingleNode('ChainPresetList')
+    if ($null -eq $chainList) {
+        $chainList = $xml.CreateElement('ChainPresetList')
+        [void]$xml.DocumentElement.AppendChild($chainList)
+    }
+    $beatFx = @('XDJ-R1 TRANS', 'XDJ-R1 FLANGER', 'XDJ-R1 ECHO')
+    foreach ($child in @($chainList.ChildNodes)) {
+        if ($child.Name -eq 'ChainPresetName' -and $beatFx -contains $child.InnerText) {
+            [void]$chainList.RemoveChild($child)
+        }
+    }
+    for ($i = $beatFx.Count - 1; $i -ge 0; $i--) {
+        $node = $xml.CreateElement('ChainPresetName')
+        $node.InnerText = $beatFx[$i]
+        [void]$chainList.PrependChild($node)
+    }
     $writer = New-Object System.Xml.XmlWriterSettings
     $writer.Encoding = $utf8
     $writer.Indent = $true

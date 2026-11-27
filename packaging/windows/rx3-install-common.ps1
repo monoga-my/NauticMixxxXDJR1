@@ -497,6 +497,29 @@ function Set-Rx3QuickEffectOrder {
         }
     }
 
+    # Beat FX presets the XDJ-R1 mapping loads by position (1-3).
+    $chainList = $root.SelectSingleNode("ChainPresetList")
+    if (-not $chainList) {
+        $chainList = $effectsDocument.CreateElement("ChainPresetList")
+        [void]$root.AppendChild($chainList)
+    }
+    $beatFxPresets = @("XDJ-R1 TRANS", "XDJ-R1 FLANGER", "XDJ-R1 ECHO")
+    foreach ($node in @($chainList.SelectNodes("ChainPresetName"))) {
+        if ($beatFxPresets -contains $node.InnerText.Trim()) {
+            [void]$chainList.RemoveChild($node)
+        }
+    }
+    for ($index = $beatFxPresets.Count - 1; $index -ge 0; $index--) {
+        $node = $effectsDocument.CreateElement("ChainPresetName")
+        $node.InnerText = $beatFxPresets[$index]
+        if ($chainList.FirstChild) {
+            [void]$chainList.InsertBefore($node, $chainList.FirstChild)
+        }
+        else {
+            [void]$chainList.AppendChild($node)
+        }
+    }
+
     $temporaryFile = "$EffectsConfig.rx3.tmp"
     $writerSettings = New-Object -TypeName System.Xml.XmlWriterSettings
     $writerSettings.Indent = $true
