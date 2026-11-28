@@ -379,6 +379,16 @@
                 </options>
             </control>
             <control>
+                <description>SHIFT + SYNC: toggle MENU (UTILITY)</description>
+                <group>[Library]</group>
+                <key>PioneerXDJR1.menuButton</key>
+                <status>0x90</status>
+                <midino>0x5C</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
                 <description>MASTER: make this deck the sync leader</description>
                 <group>[Channel1]</group>
                 <key>PioneerXDJR1.Master</key>
@@ -1031,6 +1041,16 @@
                 <key>PioneerXDJR1.Sync</key>
                 <status>0x91</status>
                 <midino>0x58</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <description>SHIFT + SYNC: toggle MENU (UTILITY)</description>
+                <group>[Library]</group>
+                <key>PioneerXDJR1.menuButton</key>
+                <status>0x91</status>
+                <midino>0x5C</midino>
                 <options>
                     <script-binding/>
                 </options>

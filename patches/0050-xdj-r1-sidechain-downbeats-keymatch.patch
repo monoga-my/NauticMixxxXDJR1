@@ -257,6 +257,58 @@ index 9b67f01..5373613 100644
              const auto position = mixxx::audio::FramePos(
                      signalInfo.millis2frames(beat.timeMs + m_offsetMillis))
                                            .toNearestFrameBoundary();
+diff --git a/src/soundio/soundmanager.cpp b/src/soundio/soundmanager.cpp
+index 4f7a944..bcceb0e 100644
+--- a/src/soundio/soundmanager.cpp
++++ b/src/soundio/soundmanager.cpp
+@@ -84,14 +84,39 @@ SoundManager::SoundManager(UserSettingsPointer pConfig,
+     // or while a different system output was selected. Explicitly disabled audio
+     // remains disabled (also used by visual-only test profiles).
+     if (m_config.getAPI() != SoundManagerConfig::kDefaultAPI) {
+-        const auto systemOutput = getSystemDefaultOutputDevice();
+-        if (systemOutput) {
+-            m_config.useSystemDefaultOutput(systemOutput->getDeviceId(),
+-                    systemOutput->getHostAPI(), systemOutput->getDefaultSampleRate());
+-            qInfo() << "Startup MASTER follows system default output:"
+-                    << systemOutput->getDisplayName();
+-        } else {
+-            qWarning() << "No stereo system default output is available";
++#ifdef __WINDOWS__
++        // When the Pioneer XDJ-R1 is connected, default to Windows WASAPI with
++        // Main on Channels 1-2 and Headphones on Channels 3-4 instead of MME.
++        SoundDevicePointer pXdjR1;
++        for (const auto& pDevice : getDeviceList(MIXXX_PORTAUDIO_WASAPI_STRING, true, false)) {
++            if (pDevice->getNumOutputChannels() >= 4 &&
++                    pDevice->getDisplayName().contains(QStringLiteral("XDJ-R1"), Qt::CaseInsensitive)) {
++                pXdjR1 = pDevice;
++                break;
++            }
++        }
++        if (pXdjR1) {
++            m_config.setAPI(MIXXX_PORTAUDIO_WASAPI_STRING);
++            m_config.clearOutputs();
++            m_config.addOutput(pXdjR1->getDeviceId(),
++                    AudioOutput(AudioPathType::Main, 0, mixxx::audio::ChannelCount::stereo(), 0));
++            m_config.addOutput(pXdjR1->getDeviceId(),
++                    AudioOutput(AudioPathType::Headphones, 0, mixxx::audio::ChannelCount::stereo(), 2));
++            m_config.setSampleRate(pXdjR1->getDefaultSampleRate());
++            qInfo() << "Startup audio auto-configured for XDJ-R1 (WASAPI):"
++                    << pXdjR1->getDisplayName();
++        } else
++#endif
++        {
++            const auto systemOutput = getSystemDefaultOutputDevice();
++            if (systemOutput) {
++                m_config.useSystemDefaultOutput(systemOutput->getDeviceId(),
++                        systemOutput->getHostAPI(), systemOutput->getDefaultSampleRate());
++                qInfo() << "Startup MASTER follows system default output:"
++                        << systemOutput->getDisplayName();
++            } else {
++                qWarning() << "No stereo system default output is available";
++            }
+         }
+     }
+     checkConfig();
 diff --git a/src/test/rx3display_test.cpp b/src/test/rx3display_test.cpp
 index 553c489..d5a9d9a 100644
 --- a/src/test/rx3display_test.cpp
@@ -277,12 +329,21 @@ index 553c489..d5a9d9a 100644
  TEST(Rx3BrowserPlayback, CamelotIsMixxxLancelotNumbering) {
      using KN=KeyUtils::KeyNotation;
 diff --git a/src/widget/rx3browsernavigation.h b/src/widget/rx3browsernavigation.h
-index 16497c1..35ab52c 100644
+index 16497c1..b1f5418 100644
 --- a/src/widget/rx3browsernavigation.h
 +++ b/src/widget/rx3browsernavigation.h
-@@ -24,15 +24,16 @@ inline QString displayKey(const QString& raw) {
+@@ -19,20 +19,23 @@ inline BrowserRows visibleBrowserRows(int availableHeight) {
+     const int row=available/(kBrowserVisibleRows+1);
+     return {row,available-kBrowserVisibleRows*row};
+ }
+-// A rekordbox key name ("Am") in the current notation (Camelot by default).
++// Always display keys in Camelot / Lancelot notation (7A, 12B, etc.).
+ inline QString displayKey(const QString& raw) {
      const auto key=KeyUtils::guessKeyFromText(raw);
-     return key==mixxx::track::io::key::INVALID ? raw : KeyUtils::keyToString(key);
+-    return key==mixxx::track::io::key::INVALID ? raw : KeyUtils::keyToString(key);
++    return key==mixxx::track::io::key::INVALID
++            ? raw
++            : KeyUtils::keyToString(key, KeyUtils::KeyNotation::Lancelot);
  }
 -// BROWSE key highlight against the master deck: the same key (green) or a
 -// related key on the Camelot wheel (yellow: relative major/minor, one step
@@ -301,3 +362,69 @@ index 16497c1..35ab52c 100644
      return KeyUtils::getCompatibleKeys(reference).contains(key) ? KeyMatch::Related : KeyMatch::None;
  }
  inline int categoryRank(const QString& label) {
+diff --git a/src/widget/wkey.cpp b/src/widget/wkey.cpp
+index 3186e22..f688cc0 100644
+--- a/src/widget/wkey.cpp
++++ b/src/widget/wkey.cpp
+@@ -39,7 +39,7 @@ void WKey::setValue(double dValue) {
+         // Render this key with the user-provided notation.
+         QString keyStr = "";
+         if (m_displayKey) {
+-            keyStr = KeyUtils::keyToString(key);
++            keyStr = KeyUtils::keyToString(key, KeyUtils::KeyNotation::Lancelot);
+         }
+         if (m_displayCents) {
+             double diff_cents = m_engineKeyDistance.get();
+diff --git a/src/widget/wrx3browser.h b/src/widget/wrx3browser.h
+index f725d3d..b842c6f 100644
+--- a/src/widget/wrx3browser.h
++++ b/src/widget/wrx3browser.h
+@@ -149,10 +149,10 @@ class WRx3Browser : public QWidget, public WBaseWidget {
+         auto* headerLayout=new QVBoxLayout(header);headerLayout->setContentsMargins(0,0,0,0);headerLayout->setSpacing(0);
+         auto* h = new QHBoxLayout;h->setContentsMargins(0,0,0,0);h->setSpacing(4);headerLayout->addLayout(h);
+         m_source = new QPushButton("SOURCE", header); m_source->setObjectName("RX3SourceButton");
+-        h->addWidget(m_source);
++        h->addWidget(m_source, 1);
+         m_headerButtons.push_back(m_source);
+         const auto addHeader=[this,header,h](const QString& text,const QString& name,std::function<void()> action) {
+-            auto* button=new QPushButton(text,header);button->setObjectName(name);h->addWidget(button);
++            auto* button=new QPushButton(text,header);button->setObjectName(name);h->addWidget(button, 1);
+             m_headerButtons.push_back(button);connect(button,&QPushButton::clicked,this,std::move(action));return button;
+         };
+         addHeader("BROWSE","RX3BrowseButton",[this]{browseSelectedSource();});
+@@ -174,7 +174,6 @@ class WRx3Browser : public QWidget, public WBaseWidget {
+         connect(menu,&QPushButton::pressed,this,[this]{m_menuHeld=false;m_menuHoldTimer->start();});
+         connect(menu,&QPushButton::released,m_menuHoldTimer,&QTimer::stop);
+         connect(m_menuHoldTimer,&QTimer::timeout,this,[this]{m_menuHeld=true;showUtility();});
+-        h->addStretch(1);
+         auto* detailRow=new QHBoxLayout;detailRow->setContentsMargins(0,0,0,0);headerLayout->addLayout(detailRow);
+         m_sourceLabel=new QLabel(header);m_sourceLabel->setObjectName("RX3BrowserDeviceLabel");m_sourceLabel->hide();detailRow->addWidget(m_sourceLabel);
+         m_breadcrumb = new QPushButton("COLLECTION", header);m_breadcrumb->setObjectName("RX3BrowserBreadcrumb");
+@@ -182,7 +181,7 @@ class WRx3Browser : public QWidget, public WBaseWidget {
+         connect(m_breadcrumb,&QPushButton::clicked,this,[this]{back();updateNavigationHighlight();});
+         m_search = new QLineEdit(header); m_search->setPlaceholderText("SEARCH"); m_search->hide(); detailRow->addWidget(m_search,1);
+         m_searchCount=new QLabel("0",header);m_searchCount->setObjectName("RX3SearchCount");m_searchCount->hide();detailRow->addWidget(m_searchCount);
+-        m_infoButton = new QPushButton("◀  INFO", header);h->addWidget(m_infoButton);m_headerButtons.push_back(m_infoButton);
++        m_infoButton = new QPushButton("◀  INFO", header);h->addWidget(m_infoButton, 1);m_headerButtons.push_back(m_infoButton);
+         layout->addWidget(header);
+         m_pages = new QStackedWidget(this); layout->addWidget(m_pages, 1);
+         auto* browse = new QWidget(m_pages); auto* b = new QHBoxLayout(browse);
+@@ -431,11 +430,14 @@ class WRx3Browser : public QWidget, public WBaseWidget {
+     void resizeEvent(QResizeEvent* event) override {
+         QWidget::resizeEvent(event);
+         const double scale = qMax(0.6, height()/690.0);
+-        m_categories->setFixedWidth(qRound(128*scale));
+-        m_searchRail->setFixedWidth(qRound(128*scale));m_searchRail->item(0)->setSizeHint(QSize(qRound(128*scale),qRound(65*scale)));
++        m_categories->setFixedWidth(qRound(104*scale));
++        m_searchRail->setFixedWidth(qRound(104*scale));m_searchRail->item(0)->setSizeHint(QSize(qRound(104*scale),qRound(65*scale)));
++        m_leftColumn->setMaximumWidth(qRound(320*scale));
+         m_headerWidget->setFixedHeight(qRound(78*scale));
+-        for(auto* button:m_headerButtons) button->setFixedHeight(qRound(46*scale));
+-        m_source->setFixedWidth(qRound(100*scale));
++        for(auto* button:m_headerButtons) {
++            button->setFixedHeight(qRound(46*scale));
++            QFont hf=button->font();hf.setPixelSize(qMax(16,qRound(26*scale)));hf.setBold(true);button->setFont(hf);
++        }
+         m_breadcrumb->setFixedHeight(qRound(32*scale));m_sourceLabel->setFixedHeight(qRound(32*scale));
+         m_search->setMaximumWidth(m_selectedCategory=="SEARCH" ? QWIDGETSIZE_MAX : qRound(400*scale));
+         m_trackInfo->setFixedWidth(qRound(280*scale));

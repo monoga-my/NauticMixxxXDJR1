@@ -532,6 +532,7 @@ PioneerXDJR1.beatValues = [1 / 16, 1 / 8, 1 / 4, 1 / 2, 3 / 4, 1, 2, 4, 8, 16];
 PioneerXDJR1.defaultBeat = 5; // 1 beat
 PioneerXDJR1.fxEdit = {1: -1, 2: -1}; // index into beatFx, -1 = none
 PioneerXDJR1.fxBeat = {1: [5, 5, 5, 5], 2: [5, 5, 5, 5]}; // index into beatValues
+PioneerXDJR1.fxLevel = {1: [0.5, 0.5, 0.5], 2: [0.5, 0.5, 0.5]}; // 0..1 per FX (shown 0..200%)
 PioneerXDJR1.fxLevelSet = {1: [false, false, false], 2: [false, false, false]};
 PioneerXDJR1.levelKnob = {1: 0.5, 2: 0.5};
 PioneerXDJR1.unitReady = {1: false, 2: false};
@@ -596,6 +597,13 @@ PioneerXDJR1.updateFxScreen = function(deck) {
     PioneerXDJR1.skinSet("xdj_fx" + deck + "_roll", PioneerXDJR1.rollOn[deck] ? 1 : 0);
     PioneerXDJR1.skinSet("xdj_fx" + deck + "_beat",
         edit >= 0 ? PioneerXDJR1.fxBeat[deck][edit] : PioneerXDJR1.defaultBeat);
+    for (var i = 0; i < 4; i++) {
+        PioneerXDJR1.skinSet("xdj_fx" + deck + "_beat" + (i + 1), PioneerXDJR1.fxBeat[deck][i]);
+    }
+    for (var j = 0; j < 3; j++) {
+        PioneerXDJR1.skinSet("xdj_fx" + deck + "_level" + (j + 1),
+            Math.round(PioneerXDJR1.fxLevel[deck][j] * 200));
+    }
 };
 
 PioneerXDJR1.paintBeatFx = function(deck) {
@@ -732,6 +740,7 @@ PioneerXDJR1.beatFxButton = function(channel, control, value, status) {
         } else if (fx.sidechain) {
             var unit = PioneerXDJR1.fxUnit(deck);
             if (!PioneerXDJR1.fxLevelSet[deck][index]) {
+                PioneerXDJR1.fxLevel[deck][index] = PioneerXDJR1.levelKnob[deck];
                 engine.setValue(unit, "rx3_sidechain_depth", PioneerXDJR1.levelKnob[deck]);
                 PioneerXDJR1.fxLevelSet[deck][index] = true;
             }
@@ -739,6 +748,7 @@ PioneerXDJR1.beatFxButton = function(channel, control, value, status) {
         } else {
             var group = PioneerXDJR1.fxSlot(deck, fx.slot);
             if (!PioneerXDJR1.fxLevelSet[deck][index]) {
+                PioneerXDJR1.fxLevel[deck][index] = PioneerXDJR1.levelKnob[deck];
                 engine.setValue(group, "meta", PioneerXDJR1.levelKnob[deck]);
                 PioneerXDJR1.fxLevelSet[deck][index] = true;
             }
@@ -784,15 +794,19 @@ PioneerXDJR1.applyBeatFxLevel = function(deck, normalized) {
     }
     var fx = PioneerXDJR1.beatFx[edit];
     if (fx.sidechain) {
+        PioneerXDJR1.fxLevel[deck][edit] = normalized;
         engine.setValue(PioneerXDJR1.fxUnit(deck), "rx3_sidechain_depth", normalized);
         PioneerXDJR1.fxLevelSet[deck][edit] = true;
+        PioneerXDJR1.updateFxScreen(deck);
         return;
     }
     if (!fx.slot) {
         return;
     }
+    PioneerXDJR1.fxLevel[deck][edit] = normalized;
     engine.setValue(PioneerXDJR1.fxSlot(deck, fx.slot), "meta", normalized);
     PioneerXDJR1.fxLevelSet[deck][edit] = true;
+    PioneerXDJR1.updateFxScreen(deck);
 };
 
 PioneerXDJR1.beatFxLevelMsb = function(channel, control, value, status) {
@@ -1063,6 +1077,18 @@ PioneerXDJR1.matchButton = function(channel, control, value, status) {
     }
     engine.setValue("[RX3Browser]", "match_master", 1);
     engine.setValue("[RX3Browser]", "match_master", 0);
+};
+
+// SHIFT + SYNC (0x5C): open BROWSE if needed and toggle the MENU (UTILITY) page.
+PioneerXDJR1.menuButton = function(channel, control, value, status) {
+    if (!PioneerXDJR1.isPress(value, status)) {
+        return;
+    }
+    if (!NauticRX3Browser.isOpen()) {
+        NauticRX3Browser.open();
+    }
+    engine.setValue("[RX3Browser]", "utility", 1);
+    engine.setValue("[RX3Browser]", "utility", 0);
 };
 
 PioneerXDJR1.masterTempoLastClicked = {};

@@ -488,6 +488,8 @@ function engine_set(values, _mapping, group, key, value) { values.set(`${group},
     has("0xB4", "0x02", "PioneerXDJR1.beatFxLevelMsb");
     has("0x91", "0x42", "PioneerXDJR1.selectPress");
     has("0x90", "0x56", "PioneerXDJR1.quantizeButton");
+    has("0x90", "0x5C", "PioneerXDJR1.menuButton");
+    has("0x91", "0x5C", "PioneerXDJR1.menuButton");
     has("0x90", "0x5D", "PioneerXDJR1.matchButton");
     has("0x91", "0x5D", "PioneerXDJR1.matchButton");
     has("0xB0", "0x40", "PioneerXDJR1.selectTurn");

@@ -1,23 +1,26 @@
-<!-- One effect row of an XDJ-R1 FX pane: name (pink gel while the effect is
-     on), level bar (the effect's meta knob = LEVEL/DEPTH), cyan outline while
-     it is the effect LEVEL/DEPTH and BEAT are editing. -->
+<!-- One effect row of an XDJ-R1 FX pane: left-aligned FX button, per-FX BEAT
+     column, and per-FX Level/Depth (0-200%) column. -->
 <Template>
   <WidgetGroup>
     <ObjectName>XdjFxRow</ObjectName><Layout>horizontal</Layout><Size>0me,26f</Size>
     <Connection><ConfigKey>[Skin],xdj_fx<Variable name="deck"/>_edit</ConfigKey><Transform><IsEqual><Variable name="index"/></IsEqual></Transform><BindProperty>highlight</BindProperty></Connection>
     <Children>
       <Label>
-        <ObjectName>XdjFxName</ObjectName><Text><Variable name="name"/></Text><Size>78f,22f</Size>
+        <ObjectName>XdjFxName</ObjectName><Text><Variable name="name"/></Text><Size>82f,22f</Size>
         <Connection><ConfigKey>[EffectRack1_EffectUnit<Variable name="unit"/>_Effect<Variable name="slot"/>],enabled</ConfigKey><BindProperty>highlight</BindProperty></Connection>
       </Label>
-      <VuMeter>
-        <ObjectName>XdjFxLevel</ObjectName><Size>0me,8f</Size>
-        <PathVu>skin:/images/progress_fill.svg</PathVu>
-        <PathBack>skin:/images/progress_back.svg</PathBack>
-        <Horizontal>true</Horizontal>
-        <PeakHoldSize>0</PeakHoldSize><PeakHoldTime>0</PeakHoldTime><PeakFallTime>0</PeakFallTime><PeakFallStep>1</PeakFallStep>
-        <Connection><ConfigKey>[EffectRack1_EffectUnit<Variable name="unit"/>_Effect<Variable name="slot"/>],meta</ConfigKey></Connection>
-      </VuMeter>
+      <WidgetGroup><Size>0me,1f</Size></WidgetGroup>
+      <Template src="skin:xdj_fx_beat.xml"/>
+      <WidgetGroup>
+        <ObjectName>XdjFxLevelBox</ObjectName><Layout>horizontal</Layout><Size>52f,22f</Size>
+        <Children>
+          <Number>
+            <ObjectName>XdjFxLevelVal</ObjectName><Size>38f,22f</Size><NumberOfDigits>0</NumberOfDigits>
+            <Connection><ConfigKey>[Skin],xdj_fx<Variable name="deck"/>_level<Variable name="index"/></ConfigKey></Connection>
+          </Number>
+          <Label><ObjectName>XdjFxPct</ObjectName><Text>%</Text><Size>14f,22f</Size></Label>
+        </Children>
+      </WidgetGroup>
     </Children>
   </WidgetGroup>
 </Template>

@@ -30,6 +30,20 @@
 			<attribute config_key="[Skin],xdj_fx2_edit">0</attribute>
 			<attribute config_key="[Skin],xdj_fx1_beat">5</attribute>
 			<attribute config_key="[Skin],xdj_fx2_beat">5</attribute>
+			<attribute config_key="[Skin],xdj_fx1_beat1">5</attribute>
+			<attribute config_key="[Skin],xdj_fx1_beat2">5</attribute>
+			<attribute config_key="[Skin],xdj_fx1_beat3">5</attribute>
+			<attribute config_key="[Skin],xdj_fx1_beat4">5</attribute>
+			<attribute config_key="[Skin],xdj_fx2_beat1">5</attribute>
+			<attribute config_key="[Skin],xdj_fx2_beat2">5</attribute>
+			<attribute config_key="[Skin],xdj_fx2_beat3">5</attribute>
+			<attribute config_key="[Skin],xdj_fx2_beat4">5</attribute>
+			<attribute config_key="[Skin],xdj_fx1_level1">100</attribute>
+			<attribute config_key="[Skin],xdj_fx1_level2">100</attribute>
+			<attribute config_key="[Skin],xdj_fx1_level3">100</attribute>
+			<attribute config_key="[Skin],xdj_fx2_level1">100</attribute>
+			<attribute config_key="[Skin],xdj_fx2_level2">100</attribute>
+			<attribute config_key="[Skin],xdj_fx2_level3">100</attribute>
 			<attribute config_key="[Skin],xdj_fx1_roll">0</attribute>
 			<attribute config_key="[Skin],xdj_fx2_roll">0</attribute>
 			<attribute persist="true" config_key="[Master],skin_settings">0</attribute>

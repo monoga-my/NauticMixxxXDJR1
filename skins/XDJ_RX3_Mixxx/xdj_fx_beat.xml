@@ -1,0 +1,18 @@
+<!-- Per-FX BEAT value cell (1/16 .. 16) for one row of xdj_fx_pane.xml. -->
+<Template>
+  <WidgetGroup>
+    <ObjectName>XdjFxBeatBox</ObjectName><Layout>horizontal</Layout><Size>42f,22f</Size>
+    <Children>
+      <Label><ObjectName>XdjFxBeatCell</ObjectName><Text>1/16</Text><Size>42f,22f</Size><Connection><ConfigKey>[Skin],xdj_fx<Variable name="deck"/>_beat<Variable name="index"/></ConfigKey><Transform><IsEqual>0</IsEqual></Transform><BindProperty>visible</BindProperty></Connection></Label>
+      <Label><ObjectName>XdjFxBeatCell</ObjectName><Text>1/8</Text><Size>42f,22f</Size><Connection><ConfigKey>[Skin],xdj_fx<Variable name="deck"/>_beat<Variable name="index"/></ConfigKey><Transform><IsEqual>1</IsEqual></Transform><BindProperty>visible</BindProperty></Connection></Label>
+      <Label><ObjectName>XdjFxBeatCell</ObjectName><Text>1/4</Text><Size>42f,22f</Size><Connection><ConfigKey>[Skin],xdj_fx<Variable name="deck"/>_beat<Variable name="index"/></ConfigKey><Transform><IsEqual>2</IsEqual></Transform><BindProperty>visible</BindProperty></Connection></Label>
+      <Label><ObjectName>XdjFxBeatCell</ObjectName><Text>1/2</Text><Size>42f,22f</Size><Connection><ConfigKey>[Skin],xdj_fx<Variable name="deck"/>_beat<Variable name="index"/></ConfigKey><Transform><IsEqual>3</IsEqual></Transform><BindProperty>visible</BindProperty></Connection></Label>
+      <Label><ObjectName>XdjFxBeatCell</ObjectName><Text>3/4</Text><Size>42f,22f</Size><Connection><ConfigKey>[Skin],xdj_fx<Variable name="deck"/>_beat<Variable name="index"/></ConfigKey><Transform><IsEqual>4</IsEqual></Transform><BindProperty>visible</BindProperty></Connection></Label>
+      <Label><ObjectName>XdjFxBeatCell</ObjectName><Text>1</Text><Size>42f,22f</Size><Connection><ConfigKey>[Skin],xdj_fx<Variable name="deck"/>_beat<Variable name="index"/></ConfigKey><Transform><IsEqual>5</IsEqual></Transform><BindProperty>visible</BindProperty></Connection></Label>
+      <Label><ObjectName>XdjFxBeatCell</ObjectName><Text>2</Text><Size>42f,22f</Size><Connection><ConfigKey>[Skin],xdj_fx<Variable name="deck"/>_beat<Variable name="index"/></ConfigKey><Transform><IsEqual>6</IsEqual></Transform><BindProperty>visible</BindProperty></Connection></Label>
+      <Label><ObjectName>XdjFxBeatCell</ObjectName><Text>4</Text><Size>42f,22f</Size><Connection><ConfigKey>[Skin],xdj_fx<Variable name="deck"/>_beat<Variable name="index"/></ConfigKey><Transform><IsEqual>7</IsEqual></Transform><BindProperty>visible</BindProperty></Connection></Label>
+      <Label><ObjectName>XdjFxBeatCell</ObjectName><Text>8</Text><Size>42f,22f</Size><Connection><ConfigKey>[Skin],xdj_fx<Variable name="deck"/>_beat<Variable name="index"/></ConfigKey><Transform><IsEqual>8</IsEqual></Transform><BindProperty>visible</BindProperty></Connection></Label>
+      <Label><ObjectName>XdjFxBeatCell</ObjectName><Text>16</Text><Size>42f,22f</Size><Connection><ConfigKey>[Skin],xdj_fx<Variable name="deck"/>_beat<Variable name="index"/></ConfigKey><Transform><IsEqual>9</IsEqual></Transform><BindProperty>visible</BindProperty></Connection></Label>
+    </Children>
+  </WidgetGroup>
+</Template>

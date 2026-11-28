@@ -82,6 +82,7 @@ for deck in (1, 2):
     control(channel, "fwd", note, 0x09, "TRACK SEARCH forward")
     control(channel, "back", note, 0x0A, "TRACK SEARCH back")
     script(channel, "Sync", note, 0x58, "SYNC (stays on; lit while on)")
+    script("[Library]", "menuButton", note, 0x5C, "SHIFT + SYNC: toggle MENU (UTILITY)")
     script(channel, "Master", note, 0x59, "MASTER: make this deck the sync leader")
     script("[Library]", "matchButton", note, 0x5D,
            "SHIFT + MASTER in BROWSE: MATCH filter (master deck key, tempo within 16%)")

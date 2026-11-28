@@ -3646,7 +3646,9 @@ QPushButton[rx3Bank="true"]:disabled { color: #6b7385; }
   color: #e9f8ff;
   border: 1px solid rgba(127, 227, 255, 0.30);
   border-radius: 9px;
-  font-size: 16px;
+  font-size: 22px;
+  font-weight: bold;
+  padding: 2px 6px;
 }
 #RX3BrowserHeader QPushButton[active="true"] { border: 1px solid #6fd6ff; border-top: 2px solid #6fd6ff; color: #ffffff; }
 #RX3BrowserHeader QPushButton[encoderFocus="true"] { border: 1px solid #ff9ad5; color: #ffffff; }
@@ -3826,6 +3828,14 @@ QMenu::item:selected {
   color: #2b0420;
   border: 1px solid #ffffff;
 }
+#XdjFxColHeader { background: transparent; margin: 0 6px; padding: 0 4px 0 1px; qproperty-layoutSpacing: 4; }
+#XdjFxColTitleLeft { background: transparent; color: #9fdcff; font-size: 10px; font-weight: bold; qproperty-alignment: 'AlignLeft | AlignVCenter'; padding-left: 6px; }
+#XdjFxColTitle { background: transparent; color: #9fdcff; font-size: 10px; font-weight: bold; qproperty-alignment: 'AlignRight | AlignVCenter'; }
+#XdjFxBeatBox, #XdjFxLevelBox { background: transparent; }
+#XdjFxBeatCell { background: transparent; color: #8fe9ff; font-size: 13px; font-weight: bold; qproperty-alignment: 'AlignRight | AlignVCenter'; }
+#XdjFxLevelVal { background: transparent; color: #e9f8ff; font-size: 13px; font-weight: bold; qproperty-alignment: 'AlignRight | AlignVCenter'; }
+#XdjFxPct { background: transparent; color: #9fdcff; font-size: 11px; font-weight: bold; qproperty-alignment: 'AlignLeft | AlignVCenter'; }
+#XdjFxLevelDash { background: transparent; color: #6b7385; font-size: 13px; qproperty-alignment: 'AlignRight | AlignVCenter'; }
 #XdjFxLevel { background: transparent; border-radius: 4px; }
 #XdjFxBeatRow { background: transparent; padding: 0 12px; qproperty-layoutSpacing: 6; }
 #XdjFxBeatCaption { background: transparent; color: #9fdcff; font-size: 12px; }
