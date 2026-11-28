@@ -17,6 +17,8 @@ function load() {
     const midiCalls = [];
     const connections = [];
     const scratch = [];
+    const timers = new Map();
+    let nextTimerId = 1;
     const engine = {
         setValue(group, key, value) {
             values.set(`${group},${key}`, value);
@@ -34,8 +36,12 @@ function load() {
             connections.push(connection);
             return connection;
         },
-        beginTimer() { return 1; },
-        stopTimer() {},
+        beginTimer(_ms, callback, oneShot) {
+            const id = nextTimerId++;
+            timers.set(id, {callback, oneShot});
+            return id;
+        },
+        stopTimer(id) { timers.delete(id); },
         scratchEnable(deck, ...args) { scratch.push(["enable", deck, ...args]); values.set(`scratch${deck}`, 1); },
         scratchDisable(deck, ramp) { scratch.push(["disable", deck, ramp]); values.set(`scratch${deck}`, 0); },
         scratchTick(deck, delta) { scratch.push(["tick", deck, delta]); },
@@ -52,7 +58,7 @@ function load() {
     }
     const mapping = vm.runInContext("PioneerXDJR1", sandbox);
     const browser = vm.runInContext("NauticRX3Browser", sandbox);
-    return {mapping, browser, values, midiCalls, scratch};
+    return {mapping, browser, values, midiCalls, scratch, timers};
 }
 
 const close = (actual, expected) => assert.ok(Math.abs(actual - expected) < 1e-3,
@@ -281,9 +287,10 @@ function engine_set(values, _mapping, group, key, value) { values.set(`${group},
     }
 }
 
-// VINYL: touch the top to scratch; CDJ mode bends with the whole platter.
+// VINYL: touch the top to scratch; releasing keeps scratching while the wheel
+// coasts (backspin momentum) until ticks stop; CDJ mode bends with the whole platter.
 {
-    const {mapping, values, scratch, midiCalls} = load();
+    const {mapping, values, scratch, midiCalls, timers} = load();
     mapping.init();
     mapping.platterTouch(0, 0x36, 0x7F, 0x90, "[Channel1]");
     assert.equal(scratch.at(-1)[0], "enable");
@@ -291,6 +298,12 @@ function engine_set(values, _mapping, group, key, value) { values.set(`${group},
     mapping.jogTop(0, 0x02, 0x3C, 0xB0, "[Channel1]");
     assert.deepEqual(scratch.at(-1), ["tick", 1, -4]);
     mapping.platterTouch(0, 0x36, 0x00, 0x90, "[Channel1]");
+    assert.equal(values.get("scratch1"), 1, "coasting backspin keeps scratching");
+    mapping.jog_wheel(0, 0x01, 0x3A, 0xB0, "[Channel1]");
+    assert.deepEqual(scratch.at(-1), ["tick", 1, -6], "coasting outer ticks still scratch");
+    const releaseId = mapping.scratchReleaseTimer[1];
+    assert.ok(timers.has(releaseId), "release timer scheduled");
+    timers.get(releaseId).callback();
     assert.deepEqual(scratch.at(-1), ["disable", 1, true]);
     mapping.jog_wheel(0, 0x01, 0x49, 0xB0, "[Channel1]");
     close(values.get("[Channel1],jog"), 1);
@@ -345,9 +358,11 @@ function engine_set(values, _mapping, group, key, value) { values.set(`${group},
     const echo = midiCalls.filter((m) => m[0] === 0x94 && m[1] === 0x48).pop();
     assert.equal(trans[2], 0x00, "edited TRANS flashes");
     assert.equal(echo[2], 0x7F, "ECHO stays lit");
-    // Deck 2 runs its own FLANGER at the same time.
+    // Deck 2 runs its own SIDECHAIN (replaces FLANGER) at the same time.
     mapping.beatFxButton(0, 0x47, 0x7F, 0x95);
-    assert.equal(values.get(`${s(4, 2)},enabled`), 1);
+    assert.equal(values.get(`${u4},rx3_sidechain_enabled`), 1);
+    mapping.beatFxLevelMsb(0, 0x02, 0x60, 0xB5);
+    close(values.get(`${u4},rx3_sidechain_depth`), 0x60 * 128 / 16383);
     assert.equal(values.get(`${s(3, 1)},enabled`), 1, "deck 1 effects untouched");
     // SHIFT + TRANS turns TRANS off; editing moves to the effect still on.
     mapping.beatFxButton(0, 0x62, 0x7F, 0x94);
@@ -411,17 +426,17 @@ function engine_set(values, _mapping, group, key, value) { values.set(`${group},
     assert.equal(values.get("[Channel1],keylock"), 1);
 }
 
-// TIME in BROWSE pulses the MATCH filter.
+// SHIFT + MASTER in BROWSE pulses the MATCH filter (only while BROWSE is open).
 {
     const {mapping, browser, values} = load();
     const seen = [];
     const engineSet = values.set.bind(values);
     values.set = (k, v) => { if (k === "[RX3Browser],match_master") seen.push(v); return engineSet(k, v); };
     browser.isOpen = () => false;
-    mapping.matchButton(0, 0x3E, 0x7F, 0x90);
+    mapping.matchButton(0, 0x5D, 0x7F, 0x90);
     assert.deepEqual(seen, []);
     browser.isOpen = () => true;
-    mapping.matchButton(0, 0x3E, 0x7F, 0x90);
+    mapping.matchButton(0, 0x5D, 0x7F, 0x90);
     assert.deepEqual(seen, [1, 0]);
 }
 
@@ -473,7 +488,8 @@ function engine_set(values, _mapping, group, key, value) { values.set(`${group},
     has("0xB4", "0x02", "PioneerXDJR1.beatFxLevelMsb");
     has("0x91", "0x42", "PioneerXDJR1.selectPress");
     has("0x90", "0x56", "PioneerXDJR1.quantizeButton");
-    has("0x91", "0x3E", "PioneerXDJR1.matchButton");
+    has("0x90", "0x5D", "PioneerXDJR1.matchButton");
+    has("0x91", "0x5D", "PioneerXDJR1.matchButton");
     has("0xB0", "0x40", "PioneerXDJR1.selectTurn");
     has("0xB1", "0x41", "PioneerXDJR1.selectTurn");
     has("0x94", "0x74", "PioneerXDJR1.keepLowsButton");

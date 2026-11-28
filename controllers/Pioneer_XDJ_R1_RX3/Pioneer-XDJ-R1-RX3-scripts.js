@@ -149,6 +149,30 @@ PioneerXDJR1.shutdown = function() {
 PioneerXDJR1.jogTicksPerTurn = 600;
 PioneerXDJR1.vinylMode = {1: true, 2: true};
 PioneerXDJR1.platterTouched = {1: false, 2: false};
+// Keep vinyl scratch active after lifting off the platter top until the
+// spinning wheel stops sending ticks (so backspins play out naturally).
+PioneerXDJR1.scratchActive = {1: false, 2: false};
+PioneerXDJR1.scratchReleaseTimer = {1: 0, 2: 0};
+PioneerXDJR1.scratchReleaseMs = 120;
+
+PioneerXDJR1.clearScratchTimer = function(deck) {
+    if (PioneerXDJR1.scratchReleaseTimer[deck]) {
+        engine.stopTimer(PioneerXDJR1.scratchReleaseTimer[deck]);
+        PioneerXDJR1.scratchReleaseTimer[deck] = 0;
+    }
+};
+
+PioneerXDJR1.scheduleScratchRelease = function(deck) {
+    PioneerXDJR1.clearScratchTimer(deck);
+    PioneerXDJR1.scratchReleaseTimer[deck] = engine.beginTimer(
+        PioneerXDJR1.scratchReleaseMs, function() {
+            PioneerXDJR1.scratchReleaseTimer[deck] = 0;
+            if (!PioneerXDJR1.platterTouched[deck] && PioneerXDJR1.scratchActive[deck]) {
+                PioneerXDJR1.scratchActive[deck] = false;
+                engine.scratchDisable(deck, true);
+            }
+        }, true);
+};
 
 PioneerXDJR1.paintVinyl = function(deck) {
     midi.sendShortMsg(PioneerXDJR1.deckStatus(deck), 0x15,
@@ -161,8 +185,11 @@ PioneerXDJR1.vinylButton = function(channel, control, value, status, group) {
     }
     var deck = PioneerXDJR1.deckNumber(group);
     PioneerXDJR1.vinylMode[deck] = !PioneerXDJR1.vinylMode[deck];
-    if (!PioneerXDJR1.vinylMode[deck] && PioneerXDJR1.platterTouched[deck]) {
+    if (!PioneerXDJR1.vinylMode[deck] &&
+            (PioneerXDJR1.platterTouched[deck] || PioneerXDJR1.scratchActive[deck])) {
+        PioneerXDJR1.clearScratchTimer(deck);
         PioneerXDJR1.platterTouched[deck] = false;
+        PioneerXDJR1.scratchActive[deck] = false;
         engine.scratchDisable(deck);
     }
     PioneerXDJR1.paintVinyl(deck);
@@ -173,30 +200,47 @@ PioneerXDJR1.platterTouch = function(channel, control, value, status, group) {
     var deck = PioneerXDJR1.deckNumber(group);
     var touched = PioneerXDJR1.isPress(value, status);
     if (touched && PioneerXDJR1.vinylMode[deck]) {
+        PioneerXDJR1.clearScratchTimer(deck);
         PioneerXDJR1.platterTouched[deck] = true;
-        engine.scratchEnable(deck, PioneerXDJR1.jogTicksPerTurn, 33 + 1 / 3,
-            1 / 8, (1 / 8) / 32);
+        PioneerXDJR1.scratchActive[deck] = true;
+        if (!engine.isScratching(deck)) {
+            engine.scratchEnable(deck, PioneerXDJR1.jogTicksPerTurn, 33 + 1 / 3,
+                1 / 8, (1 / 8) / 32);
+        }
     } else if (!touched && PioneerXDJR1.platterTouched[deck]) {
         PioneerXDJR1.platterTouched[deck] = false;
-        // Ramp back to normal speed, so a backspin plays out naturally.
-        engine.scratchDisable(deck, true);
+        // Keep scratching while the wheel continues spinning; disable once
+        // ticks stop arriving.
+        PioneerXDJR1.scheduleScratchRelease(deck);
     }
 };
 
-// Platter top turned (CC 0x02): scratch while touched in VINYL mode.
+// Platter top turned (CC 0x02): scratch while touched or coasting in VINYL mode.
 PioneerXDJR1.jogTop = function(channel, control, value, status, group) {
     var deck = PioneerXDJR1.deckNumber(group);
     var delta = value - 0x40;
-    if (PioneerXDJR1.platterTouched[deck] && engine.isScratching(deck)) {
+    if (PioneerXDJR1.scratchActive[deck] && engine.isScratching(deck)) {
         engine.scratchTick(deck, delta);
+        if (!PioneerXDJR1.platterTouched[deck]) {
+            PioneerXDJR1.scheduleScratchRelease(deck);
+        }
     } else {
         engine.setValue(group, "jog", delta / PioneerXDJR1.jog_sensitivity);
     }
 };
 
-// Platter side turned (CC 0x01), and the top in CDJ mode: bend the tempo.
+// Platter side turned (CC 0x01), and the top in CDJ mode: bend the tempo, or
+// keep feeding a coasting vinyl spinback after the hand lifts off the top.
 PioneerXDJR1.jog_wheel = function(channel, control, value, status, group) {
-    engine.setValue(group, "jog", (value - 0x40) / PioneerXDJR1.jog_sensitivity);
+    var deck = PioneerXDJR1.deckNumber(group);
+    var delta = value - 0x40;
+    if (PioneerXDJR1.scratchActive[deck] && !PioneerXDJR1.platterTouched[deck] &&
+            engine.isScratching(deck)) {
+        engine.scratchTick(deck, delta);
+        PioneerXDJR1.scheduleScratchRelease(deck);
+        return;
+    }
+    engine.setValue(group, "jog", delta / PioneerXDJR1.jog_sensitivity);
 };
 
 // ---------------------------------------------------------------------------
@@ -478,7 +522,7 @@ PioneerXDJR1.paintPads = function(_value, group) {
 // The screen shows both decks' effects in two FX panes ([Skin],xdj_fx_*).
 PioneerXDJR1.beatFx = [
     {name: "TRANS", slot: 1},
-    {name: "FLANGER", slot: 2},
+    {name: "SIDECHAIN", sidechain: true},
     {name: "ECHO", slot: 3},
     {name: "ROLL"},
 ];
@@ -512,6 +556,9 @@ PioneerXDJR1.fxOn = function(deck, index) {
     var fx = PioneerXDJR1.beatFx[index];
     if (fx.name === "ROLL") {
         return PioneerXDJR1.rollOn[deck];
+    }
+    if (fx.sidechain) {
+        return engine.getValue(PioneerXDJR1.fxUnit(deck), "rx3_sidechain_enabled") > 0;
     }
     return engine.getValue(PioneerXDJR1.fxSlot(deck, fx.slot), "enabled") > 0;
 };
@@ -578,6 +625,9 @@ PioneerXDJR1.blinkBeatFx = function() {
 PioneerXDJR1.initBeatFx = function() {
     for (var deck = 1; deck <= 2; deck++) {
         PioneerXDJR1.prepareFxUnit(deck);
+        var unit = PioneerXDJR1.fxUnit(deck);
+        engine.setValue(unit, "rx3_sidechain_enabled", 0);
+        PioneerXDJR1.connect(unit, "rx3_sidechain_enabled", PioneerXDJR1.paintAllBeatFx);
         for (var slot = 1; slot <= 3; slot++) {
             engine.setValue(PioneerXDJR1.fxSlot(deck, slot), "enabled", 0);
             PioneerXDJR1.connect(PioneerXDJR1.fxSlot(deck, slot), "enabled",
@@ -626,11 +676,12 @@ PioneerXDJR1.applyFxBeat = function(deck, index) {
         }
         return;
     }
+    if (fx.sidechain) {
+        return;
+    }
     var group = PioneerXDJR1.fxSlot(deck, fx.slot);
     if (fx.name === "TRANS") {
         engine.setValue(group, "parameter2", PioneerXDJR1.clamp(1 / beats, 1 / 4, 16));
-    } else if (fx.name === "FLANGER") {
-        engine.setValue(group, "parameter1", PioneerXDJR1.clamp(beats, 1 / 4, 32));
     } else {
         engine.setValue(group, "parameter1", PioneerXDJR1.clamp(beats, 1 / 16, 4));
     }
@@ -663,6 +714,8 @@ PioneerXDJR1.beatFxButton = function(channel, control, value, status) {
         if (fx.name === "ROLL") {
             PioneerXDJR1.rollOn[deck] = false;
             PioneerXDJR1.setRoll(deck, 0);
+        } else if (fx.sidechain) {
+            engine.setValue(PioneerXDJR1.fxUnit(deck), "rx3_sidechain_enabled", 0);
         } else {
             engine.setValue(PioneerXDJR1.fxSlot(deck, fx.slot), "enabled", 0);
         }
@@ -676,6 +729,13 @@ PioneerXDJR1.beatFxButton = function(channel, control, value, status) {
                 PioneerXDJR1.rollOn[deck] = true;
                 PioneerXDJR1.setRoll(deck, PioneerXDJR1.rollBeatsFor(deck));
             }
+        } else if (fx.sidechain) {
+            var unit = PioneerXDJR1.fxUnit(deck);
+            if (!PioneerXDJR1.fxLevelSet[deck][index]) {
+                engine.setValue(unit, "rx3_sidechain_depth", PioneerXDJR1.levelKnob[deck]);
+                PioneerXDJR1.fxLevelSet[deck][index] = true;
+            }
+            engine.setValue(unit, "rx3_sidechain_enabled", 1);
         } else {
             var group = PioneerXDJR1.fxSlot(deck, fx.slot);
             if (!PioneerXDJR1.fxLevelSet[deck][index]) {
@@ -719,10 +779,19 @@ PioneerXDJR1.beatFxBeat = function(channel, control, value, status) {
 PioneerXDJR1.applyBeatFxLevel = function(deck, normalized) {
     PioneerXDJR1.levelKnob[deck] = normalized;
     var edit = PioneerXDJR1.fxEdit[deck];
-    if (edit < 0 || !PioneerXDJR1.beatFx[edit].slot) {
+    if (edit < 0) {
         return;
     }
-    engine.setValue(PioneerXDJR1.fxSlot(deck, PioneerXDJR1.beatFx[edit].slot), "meta", normalized);
+    var fx = PioneerXDJR1.beatFx[edit];
+    if (fx.sidechain) {
+        engine.setValue(PioneerXDJR1.fxUnit(deck), "rx3_sidechain_depth", normalized);
+        PioneerXDJR1.fxLevelSet[deck][edit] = true;
+        return;
+    }
+    if (!fx.slot) {
+        return;
+    }
+    engine.setValue(PioneerXDJR1.fxSlot(deck, fx.slot), "meta", normalized);
     PioneerXDJR1.fxLevelSet[deck][edit] = true;
 };
 
@@ -755,6 +824,7 @@ PioneerXDJR1.keepLowsButton = function(channel, control, value, status) {
 PioneerXDJR1.stopBeatFx = function(deck) {
     PioneerXDJR1.rollOn[deck] = false;
     PioneerXDJR1.setRoll(deck, 0);
+    engine.setValue(PioneerXDJR1.fxUnit(deck), "rx3_sidechain_enabled", 0);
     for (var slot = 1; slot <= 3; slot++) {
         engine.setValue(PioneerXDJR1.fxSlot(deck, slot), "enabled", 0);
     }

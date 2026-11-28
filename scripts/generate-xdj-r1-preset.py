@@ -83,6 +83,8 @@ for deck in (1, 2):
     control(channel, "back", note, 0x0A, "TRACK SEARCH back")
     script(channel, "Sync", note, 0x58, "SYNC (stays on; lit while on)")
     script(channel, "Master", note, 0x59, "MASTER: make this deck the sync leader")
+    script("[Library]", "matchButton", note, 0x5D,
+           "SHIFT + MASTER in BROWSE: MATCH filter (master deck key, tempo within 16%)")
     script(channel, "MasterTempo", note, 0x1A, "MASTER TEMPO (keylock)")
     script(channel, "quantizeButton", note, 0x56,
            "SHIFT + MASTER TEMPO: quantize on/off (both decks; lamp keeps showing keylock)")
@@ -121,7 +123,7 @@ for deck in (1, 2):
         script(channel, "pad", note, midino, f"SHIFT + HOT CUE {name}: delete")
 
     comment(f"Deck {deck} Beat FX (MIDI channel {deck + 4}, effect unit {deck + 2})")
-    for index, name in enumerate(["TRANS", "FLANGER", "ECHO", "ROLL"]):
+    for index, name in enumerate(["TRANS", "SIDECHAIN", "ECHO", "ROLL"]):
         script(unit, "beatFxButton", fx_note, 0x46 + index, f"FX SELECT {name}")
         script(unit, "beatFxButton", fx_note, 0x62 + index, f"SHIFT + FX SELECT {name}")
     script(unit, "beatFxBeat", fx_cc, 0x00, "BEAT")
@@ -146,8 +148,6 @@ for deck in (1, 2):
             "BACK: browser back one level", SCRIPT)
     control("[Library]", "NauticRX3Browser.view", note, 0x45,
             "SHIFT + BACK: VIEW (PERFORMANCE / BROWSE)", SCRIPT)
-    script("[Library]", "matchButton", note, 0x3E,
-           "TIME in BROWSE: MATCH filter (master deck key, tempo within 16%)")
     control("[Library]", "NauticRX3Browser.source", note, 0x3F,
             "SHIFT + TIME: SOURCE", SCRIPT)
 
