@@ -685,6 +685,8 @@ PioneerXDJR1.applyFxBeat = function(deck, index) {
         return;
     }
     if (fx.sidechain) {
+        engine.setValue(PioneerXDJR1.fxUnit(deck), "rx3_sidechain_beats",
+            PioneerXDJR1.clamp(beats, 1 / 16, 16));
         return;
     }
     var group = PioneerXDJR1.fxSlot(deck, fx.slot);
@@ -744,6 +746,7 @@ PioneerXDJR1.beatFxButton = function(channel, control, value, status) {
                 engine.setValue(unit, "rx3_sidechain_depth", PioneerXDJR1.levelKnob[deck]);
                 PioneerXDJR1.fxLevelSet[deck][index] = true;
             }
+            PioneerXDJR1.applyFxBeat(deck, index);
             engine.setValue(unit, "rx3_sidechain_enabled", 1);
         } else {
             var group = PioneerXDJR1.fxSlot(deck, fx.slot);

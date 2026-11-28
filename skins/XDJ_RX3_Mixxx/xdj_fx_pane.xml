@@ -33,7 +33,7 @@
             <Connection><ConfigKey>[EffectRack1_EffectUnit<Variable name="unit"/>],rx3_sidechain_enabled</ConfigKey><BindProperty>highlight</BindProperty></Connection>
           </Label>
           <WidgetGroup><Size>0me,1f</Size></WidgetGroup>
-          <Label><ObjectName>XdjFxBeatCell</ObjectName><Text>BASS</Text><Size>42f,22f</Size></Label>
+          <Label><ObjectName>XdjFxBeatCell</ObjectName><Text>B</Text><Size>42f,22f</Size></Label>
           <WidgetGroup>
             <ObjectName>XdjFxLevelBox</ObjectName><Layout>horizontal</Layout><Size>52f,22f</Size>
             <Children>

@@ -363,6 +363,8 @@ function engine_set(values, _mapping, group, key, value) { values.set(`${group},
     assert.equal(values.get(`${u4},rx3_sidechain_enabled`), 1);
     mapping.beatFxLevelMsb(0, 0x02, 0x60, 0xB5);
     close(values.get(`${u4},rx3_sidechain_depth`), 0x60 * 128 / 16383);
+    mapping.beatFxBeat(0, 0x00, 40, 0xB5); // 1/2 beat duck release
+    assert.equal(values.get(`${u4},rx3_sidechain_beats`), 0.5);
     assert.equal(values.get(`${s(3, 1)},enabled`), 1, "deck 1 effects untouched");
     // SHIFT + TRANS turns TRANS off; editing moves to the effect still on.
     mapping.beatFxButton(0, 0x62, 0x7F, 0x94);

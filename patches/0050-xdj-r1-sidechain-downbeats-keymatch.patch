@@ -1,8 +1,8 @@
 diff --git a/src/engine/effects/engineeffectchain.cpp b/src/engine/effects/engineeffectchain.cpp
-index ef7cca2..ab87c44 100644
+index ef7cca2..e7f730b 100644
 --- a/src/engine/effects/engineeffectchain.cpp
 +++ b/src/engine/effects/engineeffectchain.cpp
-@@ -17,10 +17,20 @@ EngineEffectChain::EngineEffectChain(const QString& group,
+@@ -17,10 +17,22 @@ EngineEffectChain::EngineEffectChain(const QString& group,
            m_buffer1(kMaxEngineSamples),
            m_buffer2(kMaxEngineSamples),
            m_rx3Lows(kMaxEngineSamples),
@@ -16,6 +16,8 @@ index ef7cca2..ab87c44 100644
 +                ConfigKey(group, "rx3_sidechain_enabled"), true, false, false, 0);
 +        m_rx3SidechainDepth = std::make_unique<ControlObject>(
 +                ConfigKey(group, "rx3_sidechain_depth"), true, false, false, 0.5);
++        m_rx3SidechainBeats = std::make_unique<ControlObject>(
++                ConfigKey(group, "rx3_sidechain_beats"), true, false, false, 0.25);
 +        if (group == "[EffectRack1_EffectUnit3]") {
 +            m_rx3SidechainSourceDeck = 1; // Deck 1 ducks to Deck 2's bass
 +        } else if (group == "[EffectRack1_EffectUnit4]") {
@@ -24,7 +26,7 @@ index ef7cca2..ab87c44 100644
      }
      if (group == "[EffectRack1_EffectUnit1]") {
          m_rx3BpmDisplay=std::make_unique<ControlObject>(ConfigKey("[RX3BeatFx]","bpm"),true,false,false,0);
-@@ -65,8 +75,77 @@ void rx3SplitLows(CSAMPLE* state, const CSAMPLE* pIn, CSAMPLE* pLows,
+@@ -65,8 +77,79 @@ void rx3SplitLows(CSAMPLE* state, const CSAMPLE* pIn, CSAMPLE* pLows,
          }
      }
  }
@@ -42,10 +44,12 @@ index ef7cca2..ab87c44 100644
 +        CSAMPLE* pOut,
 +        std::size_t numSamples,
 +        double sampleRate,
-+        CSAMPLE depth) {
++        CSAMPLE depth,
++        double releaseSec) {
 +    const double sr = std::max(1.0, sampleRate);
 +    const CSAMPLE attack = static_cast<CSAMPLE>(std::exp(-1.0 / (0.003 * sr)));
-+    const CSAMPLE release = static_cast<CSAMPLE>(std::exp(-1.0 / (0.120 * sr)));
++    const CSAMPLE release = static_cast<CSAMPLE>(
++            std::exp(-1.0 / (std::clamp(releaseSec, 0.015, 4.0) * sr)));
 +    const std::size_t numFrames = numSamples / 2;
 +    const std::size_t srcFrames = (sourceDeck >= 0 && sourceDeck < 2) ? g_rx3BassFrames[sourceDeck] : 0;
 +    const CSAMPLE* pBass = (sourceDeck >= 0 && sourceDeck < 2) ? g_rx3BassMono[sourceDeck] : nullptr;
@@ -102,7 +106,7 @@ index ef7cca2..ab87c44 100644
  bool EngineEffectChain::addEffect(EngineEffect* pEffect, int iIndex) {
      if (iIndex < 0) {
          if (kEffectDebugOutput) {
-@@ -285,6 +364,22 @@ bool EngineEffectChain::process(const ChannelHandle& inputHandle,
+@@ -285,6 +368,29 @@ bool EngineEffectChain::process(const ChannelHandle& inputHandle,
                      m_rx3Highs.data(), numSamples, sampleRate.toDouble());
              pIntermediateInput = m_rx3Highs.data();
          }
@@ -110,13 +114,20 @@ index ef7cca2..ab87c44 100644
 +                m_rx3SidechainSourceDeck >= 0) {
 +            const CSAMPLE depth = static_cast<CSAMPLE>(std::clamp(
 +                    m_rx3SidechainDepth ? m_rx3SidechainDepth->get() : 0.5, 0.0, 1.0));
++            const double beats = std::clamp(
++                    m_rx3SidechainBeats ? m_rx3SidechainBeats->get() : 0.25, 0.0625, 16.0);
++            const double beatSec = effectFeatures.beat_length.has_value()
++                    ? std::clamp(effectFeatures.beat_length->seconds, 0.2, 2.0)
++                    : 0.5;
++            const double releaseSec = std::clamp(beats * beatSec * 0.85, 0.020, 4.0);
 +            rx3ApplySidechain(m_rx3SidechainSourceDeck,
 +                    channelStatus.rx3SidechainEnv,
 +                    pIntermediateInput,
 +                    m_rx3SidechainBuf.data(),
 +                    numSamples,
 +                    sampleRate.toDouble(),
-+                    depth);
++                    depth,
++                    releaseSec);
 +            pIntermediateInput = m_rx3SidechainBuf.data();
 +            processingOccured = true;
 +        } else {
@@ -126,7 +137,7 @@ index ef7cca2..ab87c44 100644
          SINT effectChainGroupDelayFrames = 0;
          bool firstAddDryToWetEffectProcessed = false;
 diff --git a/src/engine/effects/engineeffectchain.h b/src/engine/effects/engineeffectchain.h
-index 9a8a516..9234cd7 100644
+index 9a8a516..5574ce4 100644
 --- a/src/engine/effects/engineeffectchain.h
 +++ b/src/engine/effects/engineeffectchain.h
 @@ -47,6 +47,14 @@ class EngineEffectChain final : public EffectsRequestHandler {
@@ -152,14 +163,15 @@ index 9a8a516..9234cd7 100644
          CSAMPLE oldMixKnob;
          EffectEnableState enableState;
      };
-@@ -78,8 +87,14 @@ class EngineEffectChain final : public EffectsRequestHandler {
+@@ -78,8 +87,15 @@ class EngineEffectChain final : public EffectsRequestHandler {
      // [EffectRack1_EffectUnitN],rx3_keep_lows: effects process only the mids
      // and highs; the lows below about 250 Hz pass through dry.
      std::unique_ptr<ControlObject> m_rx3KeepLows;
-+    // [EffectRack1_EffectUnit3/4],rx3_sidechain_enabled / rx3_sidechain_depth:
++    // [EffectRack1_EffectUnit3/4],rx3_sidechain_enabled / rx3_sidechain_depth / rx3_sidechain_beats:
 +    // ducks this deck to the opposite deck's bass before other Beat FX (e.g. Echo).
 +    std::unique_ptr<ControlObject> m_rx3SidechainEnabled;
 +    std::unique_ptr<ControlObject> m_rx3SidechainDepth;
++    std::unique_ptr<ControlObject> m_rx3SidechainBeats;
 +    int m_rx3SidechainSourceDeck = -1;
      mixxx::SampleBuffer m_rx3Lows;
      mixxx::SampleBuffer m_rx3Highs;
@@ -430,3 +442,22 @@ index f725d3d..b842c6f 100644
          m_breadcrumb->setFixedHeight(qRound(32*scale));m_sourceLabel->setFixedHeight(qRound(32*scale));
          m_search->setMaximumWidth(m_selectedCategory=="SEARCH" ? QWIDGETSIZE_MAX : qRound(400*scale));
          m_trackInfo->setFixedWidth(qRound(280*scale));
+diff --git a/src/widget/wtracktableview.cpp b/src/widget/wtracktableview.cpp
+index 356ba23..e0a726f 100644
+--- a/src/widget/wtracktableview.cpp
++++ b/src/widget/wtracktableview.cpp
+@@ -248,8 +248,13 @@ class Rx3TrackDelegate : public QStyledItemDelegate {
+                 r.adjust(qRound(26*unit),0,0,0);
+             }
+             if (field == "key") {
++                // Always display keys in Camelot / alphanumeric notation in BROWSE.
++                const auto parsedKey = KeyUtils::guessKeyFromText(label);
++                if (parsedKey != mixxx::track::io::key::INVALID) {
++                    label = KeyUtils::keyToString(parsedKey, KeyUtils::KeyNotation::Lancelot);
++                }
+                 // Green gel = same key as the master deck, yellow = related key.
+-                const auto match = rx3::keyMatch(masterKey(), KeyUtils::guessKeyFromText(label));
++                const auto match = rx3::keyMatch(masterKey(), parsedKey);
+                 if (match != rx3::KeyMatch::None) {
+                     const bool same = match == rx3::KeyMatch::Same;
+                     const QFontMetrics metrics(font);
