@@ -258,10 +258,10 @@ index 9b67f01..5373613 100644
                      signalInfo.millis2frames(beat.timeMs + m_offsetMillis))
                                            .toNearestFrameBoundary();
 diff --git a/src/soundio/soundmanager.cpp b/src/soundio/soundmanager.cpp
-index 4f7a944..bcceb0e 100644
+index 4f7a944..ca4d8d5 100644
 --- a/src/soundio/soundmanager.cpp
 +++ b/src/soundio/soundmanager.cpp
-@@ -84,14 +84,39 @@ SoundManager::SoundManager(UserSettingsPointer pConfig,
+@@ -84,14 +84,41 @@ SoundManager::SoundManager(UserSettingsPointer pConfig,
      // or while a different system output was selected. Explicitly disabled audio
      // remains disabled (also used by visual-only test profiles).
      if (m_config.getAPI() != SoundManagerConfig::kDefaultAPI) {
@@ -276,8 +276,10 @@ index 4f7a944..bcceb0e 100644
 +#ifdef __WINDOWS__
 +        // When the Pioneer XDJ-R1 is connected, default to Windows WASAPI with
 +        // Main on Channels 1-2 and Headphones on Channels 3-4 instead of MME.
++        const QString kWasapiApi = QStringLiteral("Windows WASAPI");
 +        SoundDevicePointer pXdjR1;
-+        for (const auto& pDevice : getDeviceList(MIXXX_PORTAUDIO_WASAPI_STRING, true, false)) {
++        const auto wasapiOutputs = getDeviceList(kWasapiApi, true, false);
++        for (const auto& pDevice : wasapiOutputs) {
 +            if (pDevice->getNumOutputChannels() >= 4 &&
 +                    pDevice->getDisplayName().contains(QStringLiteral("XDJ-R1"), Qt::CaseInsensitive)) {
 +                pXdjR1 = pDevice;
@@ -285,7 +287,7 @@ index 4f7a944..bcceb0e 100644
 +            }
 +        }
 +        if (pXdjR1) {
-+            m_config.setAPI(MIXXX_PORTAUDIO_WASAPI_STRING);
++            m_config.setAPI(kWasapiApi);
 +            m_config.clearOutputs();
 +            m_config.addOutput(pXdjR1->getDeviceId(),
 +                    AudioOutput(AudioPathType::Main, 0, mixxx::audio::ChannelCount::stereo(), 0));
